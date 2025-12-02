@@ -11,6 +11,7 @@ from app.services.metrics.registry import (
 )
 from app.services.metrics.base import MetricResult, MetricDefinition
 from app.services.metrics.timeseries import TimeSeriesAnalyzer
+from app.services.data_autofixer import auto_fix_dataframe
 
 
 router = APIRouter()
@@ -42,6 +43,10 @@ async def calculate_from_csv(
     if df.empty:
         raise HTTPException(status_code=400, detail="File is empty")
 
+    # Auto-fix data quality issues before calculating metrics
+    fix_result = auto_fix_dataframe(df)
+    df = fix_result.df
+
     engine = create_metrics_engine(df)
     results = []
 
@@ -60,13 +65,28 @@ async def calculate_from_csv(
         calculated = engine.calculate_all(category=category)
         results = [r.model_dump() for r in calculated]
 
-    return {
+    # Detect data type
+    data_info = engine.detect_data_type()
+
+    response = {
         'file': file.filename,
         'rows': len(df),
         'columns': list(df.columns),
+        'data_type': data_info['primary_type'],
         'metrics_calculated': len(results),
         'results': results
     }
+
+    # Include auto-fix info if any fixes were applied
+    if fix_result.was_modified:
+        response['data_cleaned'] = True
+        response['fixes_applied'] = fix_result.total_fixes
+
+    # Add helpful message if no metrics could be calculated
+    if len(results) == 0:
+        response['message'] = f"No metrics could be calculated. Your data appears to be {data_info['primary_type']} type with columns: {data_info['columns_detected']}. Try adding columns like 'amount' for revenue metrics or 'leads'/'conversions' for marketing metrics."
+
+    return response
 
 
 @router.post("/calculate/revenue")
@@ -82,6 +102,10 @@ async def calculate_revenue_metrics(
     if df.empty:
         raise HTTPException(status_code=400, detail="File is empty")
 
+    # Auto-fix data quality issues
+    fix_result = auto_fix_dataframe(df)
+    df = fix_result.df
+
     engine = create_revenue_engine(df)
     calculated = engine.calculate_all()
 
@@ -90,7 +114,8 @@ async def calculate_revenue_metrics(
         'rows': len(df),
         'category': 'revenue',
         'metrics_calculated': len(calculated),
-        'results': [r.model_dump() for r in calculated]
+        'results': [r.model_dump() for r in calculated],
+        'data_cleaned': fix_result.was_modified
     }
 
 
@@ -107,6 +132,10 @@ async def calculate_marketing_metrics(
     if df.empty:
         raise HTTPException(status_code=400, detail="File is empty")
 
+    # Auto-fix data quality issues
+    fix_result = auto_fix_dataframe(df)
+    df = fix_result.df
+
     engine = create_marketing_engine(df)
     calculated = engine.calculate_all()
 
@@ -115,7 +144,8 @@ async def calculate_marketing_metrics(
         'rows': len(df),
         'category': 'marketing',
         'metrics_calculated': len(calculated),
-        'results': [r.model_dump() for r in calculated]
+        'results': [r.model_dump() for r in calculated],
+        'data_cleaned': fix_result.was_modified
     }
 
 

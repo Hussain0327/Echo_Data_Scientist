@@ -2,7 +2,7 @@
 
 > Building an AI-powered analytics tool that turns messy business data into clear insights. Because small businesses deserve good data tools too.
 
-**Status**: In Development - Phase 5 Complete (Experimentation Layer Added)
+**Status**: In Development - Phase 6 In Progress (Data Auto-Fixer + Smart Detection)
 **Powered by**: DeepSeek 3.2, FastAPI, PostgreSQL, Redis, Next.js
 **Goal**: Transform 2-hour manual reports into 15-minute automated insights
 **Test Coverage**: 78% (225 tests passing)
@@ -28,6 +28,50 @@ I don't trust LLMs to do calculations. They're great at explaining things, terri
 ---
 
 ## Current Status
+
+### Phase 6 In Progress (Data Auto-Fixer + Smart Detection)
+
+Building the **data intelligence layer** - Echo now automatically fixes messy data and intelligently detects what type of data you have. No more $0 revenue metrics when you upload marketing data!
+
+**What I built today (2025-12-02):**
+
+1. **DataAutoFixer Service** (`app/services/data_autofixer.py`)
+   - Automatically cleans data BEFORE analysis - users get insights, not error messages
+   - Fixes applied silently:
+     - **Whitespace trimming**: `" 200.00 "` → `200.00`
+     - **Numeric conversion**: `"$1,500.00"` → `1500.0` (strips currency symbols, commas)
+     - **Date parsing**: Handles mixed formats (`2024-01-01`, `01/02/2024`, `Jan 3 2024`)
+     - **Boolean standardization**: `yes/no/Y/N/true/false` → consistent values
+     - **Column name normalization**: `revenue` → `amount`, `created_at` → `date`, `user_id` → `customer_id`
+     - **Duplicate column handling**: Renames duplicates to avoid conflicts
+
+2. **Smart Data Type Detection** (`app/services/metrics/engine.py`)
+   - Automatically detects if data is `revenue`, `marketing`, or `general` type
+   - Only calculates metrics that have required columns
+   - No more fake $0 revenue when you upload marketing data
+
+3. **Frontend Improvements** (`frontend/app/page.tsx`)
+   - Shows data type badge (Revenue Data / Marketing Data)
+   - Displays only applicable metrics
+   - Better error messages when no metrics can be calculated
+
+**Why this matters:**
+- Data professionals don't need Echo to tell them their data has issues - they already know
+- Echo should PROVIDE VALUE, not complain about data quality
+- Now messy data gets cleaned automatically, and you get insights immediately
+
+**Try it:**
+```bash
+# Upload messy data with mixed formats
+curl -X POST "http://localhost:8000/api/v1/metrics/calculate/csv" \
+  -F "file=@your_messy_data.csv"
+
+# Response includes:
+# - data_type: "revenue" or "marketing"
+# - data_cleaned: true
+# - fixes_applied: 5
+# - results: [only applicable metrics]
+```
 
 ### Phase 5 Complete (Experimentation + Frontend)
 
@@ -420,6 +464,7 @@ Echo/
 │       ├── schema_detector.py   # Auto-detect column types
 │       ├── data_validator.py    # Validation engine
 │       ├── ingestion.py         # Upload orchestration
+│       ├── data_autofixer.py    # Auto-fixes messy data (Phase 6)
 │       ├── metrics/             # Deterministic analytics (Phase 2)
 │       │   ├── base.py          # BaseMetric, MetricResult
 │       │   ├── engine.py        # MetricsEngine orchestrator
@@ -565,7 +610,15 @@ Current: 82% test coverage, 190 passing tests
 - [x] Synthetic experiment data for demos
 - [x] 35 new tests for the stats engine
 
-### Phase 6: What's Left
+### Phase 6: Data Intelligence (In Progress)
+- [x] DataAutoFixer service (whitespace, numeric, dates, booleans, column names)
+- [x] Smart data type detection (revenue vs marketing vs general)
+- [x] Required column checking before metric calculation
+- [x] Frontend data type badge and improved error handling
+- [ ] Deeper insights (cohort analysis, anomaly detection, predictive metrics)
+- [ ] Speed/automation (batch processing, caching, real-time streaming)
+
+### Phase 7: What's Left (Production Ready)
 - [ ] CI/CD pipeline (GitHub Actions)
 - [ ] Rate limiting and security headers
 - [ ] Load testing and performance optimization
@@ -578,6 +631,38 @@ See `/planning/` for detailed plans.
 ---
 
 ## Development Log
+
+**2025-12-02** - Phase 6 Started: Data Intelligence Layer
+Major shift in philosophy today. Realized Echo was telling users about data quality issues instead of fixing them and providing value. Data professionals already know their data has issues - they want INSIGHTS, not complaints.
+
+What I built:
+
+1. **DataAutoFixer Service** (`app/services/data_autofixer.py` - NEW FILE)
+   - Created a comprehensive data cleaning service that runs BEFORE metrics calculation
+   - Handles: whitespace trimming, currency symbol removal ($1,500 → 1500), date format standardization, boolean normalization, column name mapping
+   - Column name normalization is key: maps `revenue` → `amount`, `created_at` → `date`, `user_id` → `customer_id`, etc.
+   - Returns detailed fix log so users know what was cleaned
+
+2. **Smart Data Type Detection** (Modified `app/services/metrics/engine.py`)
+   - Added `_has_required_columns()` method to check if data has needed columns before calculating
+   - Added `detect_data_type()` method to identify revenue vs marketing vs general data
+   - Metrics engine now skips metrics that can't be calculated instead of returning $0
+
+3. **API Enhancements** (Modified `app/api/v1/metrics.py`)
+   - Response now includes `data_type` field
+   - Includes helpful message when no metrics can be calculated
+   - Shows `data_cleaned: true` and `fixes_applied: N` when auto-fixer runs
+
+4. **Frontend Improvements** (Modified `frontend/app/page.tsx`)
+   - Removed hardcoded metric names - now calculates all applicable metrics
+   - Added data type badge (Revenue Data / Marketing Data / General Data)
+   - Better formatting for different metric types (% vs $)
+   - Warning message when no metrics can be calculated
+
+The key insight: Echo should be like a good data analyst - clean the data first, then provide insights. Don't make users do the cleaning themselves.
+
+Files created: 1 (`app/services/data_autofixer.py`)
+Files modified: 4 (`engine.py`, `metrics.py`, `page.tsx`, `README.md`)
 
 **2025-11-30** - Phase 5 Complete: Added Experimentation Layer
 Decided to add A/B testing to Echo. Most DS intern postings want "experimentation experience" and I realized I could demonstrate that by building it, not just using it.
@@ -791,9 +876,9 @@ Building in public. Questions? Feedback? Open an issue.
 
 ---
 
-*Last updated: 2025-11-30*
-*Current phase: Phase 5 Complete (Experimentation Layer Added)*
+*Last updated: 2025-12-02*
+*Current phase: Phase 6 In Progress (Data Auto-Fixer + Smart Detection)*
 *Test coverage: 78% (225 tests passing)*
 *LLM: DeepSeek 3.2*
 *Frontend: Next.js 15 + TypeScript + Tailwind*
-*New: A/B Testing + Statistical Analysis*
+*New: Auto-fixes messy data, smart data type detection, only shows applicable metrics*

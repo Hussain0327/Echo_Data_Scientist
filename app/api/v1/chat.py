@@ -23,6 +23,7 @@ from app.services.llm.conversation import (
 )
 from app.services.llm.context_builder import DataContextBuilder
 from app.services.metrics.registry import create_metrics_engine
+from app.services.data_autofixer import auto_fix_dataframe
 
 
 router = APIRouter()
@@ -114,14 +115,23 @@ async def chat_with_data(
     if df.empty:
         raise HTTPException(status_code=400, detail="File is empty")
 
+    # Auto-fix data quality issues before analysis
+    fix_result = auto_fix_dataframe(df)
+    df = fix_result.df
+
     service = get_conversation_service()
     session_id = session_id or str(uuid.uuid4())
 
-    # Build data context
+    # Build data context (using cleaned data)
     data_summary, metrics_summary = DataContextBuilder.build_full_context(
         df=df,
         source_name=file.filename
     )
+
+    # Add note about auto-fixes if any were applied
+    if fix_result.was_modified:
+        fix_note = f"\n\n**Note:** Data was automatically cleaned ({fix_result.total_fixes} fixes applied)."
+        data_summary += fix_note
 
     # Calculate metrics if requested
     if calculate_metrics:
@@ -180,13 +190,22 @@ async def load_data_to_session(
     if df.empty:
         raise HTTPException(status_code=400, detail="File is empty")
 
+    # Auto-fix data quality issues before analysis
+    fix_result = auto_fix_dataframe(df)
+    df = fix_result.df
+
     service = get_conversation_service()
 
-    # Build data context
+    # Build data context (using cleaned data)
     data_summary, _ = DataContextBuilder.build_full_context(
         df=df,
         source_name=file.filename
     )
+
+    # Add note about auto-fixes if any were applied
+    if fix_result.was_modified:
+        fix_note = f"\n\n**Note:** Data was automatically cleaned ({fix_result.total_fixes} fixes applied)."
+        data_summary += fix_note
 
     metrics_calculated = 0
     metrics_summary = ""
