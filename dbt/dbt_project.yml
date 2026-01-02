@@ -22,6 +22,14 @@ models:
       +schema: staging
     intermediate:
       +materialized: ephemeral
+    dimensions:
+      +materialized: table
+      +schema: dimensions
+      +tags: ['dimensions', 'scd2']
+    facts:
+      +materialized: incremental
+      +schema: facts
+      +tags: ['facts']
     marts:
       +materialized: table
       finance:

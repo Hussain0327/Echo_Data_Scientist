@@ -1,0 +1,43 @@
+{
+  "scale": "1M",
+  "seed": 42,
+  "format": "parquet",
+  "include_history": true,
+  "files": {
+    "customers": {
+      "rows": 50000,
+      "size_bytes": 1306061
+    },
+    "products": {
+      "rows": 1000,
+      "size_bytes": 25970
+    },
+    "transactions": {
+      "rows": 1000000,
+      "size_bytes": 18605067
+    },
+    "marketing_events": {
+      "rows": 100000,
+      "size_bytes": 2090328
+    },
+    "experiments": {
+      "rows": 16673,
+      "size_bytes": 446875
+    },
+    "customer_history": {
+      "rows": 2252,
+      "size_bytes": 103533
+    },
+    "product_history": {
+      "rows": 200,
+      "size_bytes": 12186
+    },
+    "channel_history": {
+      "rows": 1,
+      "size_bytes": 4495
+    }
+  },
+  "total_rows": 1170126,
+  "total_size_bytes": 22594515,
+  "generation_time_seconds": 26.417778968811035
+}

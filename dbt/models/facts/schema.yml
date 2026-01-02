@@ -1,0 +1,127 @@
+version: 2
+
+models:
+  - name: fct_transactions
+    description: |
+      Central transaction fact table with dimension surrogate key joins.
+      Uses point-in-time dimension lookups for accurate historical analysis.
+      Incremental model - only processes new transactions.
+    columns:
+      - name: transaction_id
+        description: Unique transaction identifier
+        tests:
+          - unique
+          - not_null
+      - name: transaction_date
+        description: Date of transaction
+        tests:
+          - not_null
+      - name: date_key
+        description: Foreign key to dim_date
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+              config:
+                where: "date_key IS NOT NULL"
+      - name: customer_sk
+        description: Foreign key to dim_customer (point-in-time)
+        tests:
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_sk
+              config:
+                where: "customer_sk IS NOT NULL"
+      - name: product_sk
+        description: Foreign key to dim_product (point-in-time)
+        tests:
+          - relationships:
+              to: ref('dim_product')
+              field: product_sk
+              config:
+                where: "product_sk IS NOT NULL"
+      - name: amount
+        description: Transaction amount
+        tests:
+          - not_null
+      - name: net_amount
+        description: Net amount (negative for refunds, zero for cancelled/failed)
+      - name: status
+        description: Transaction status
+        tests:
+          - accepted_values:
+              values: ['completed', 'paid', 'pending', 'refunded', 'cancelled', 'failed']
+      - name: is_successful
+        description: Whether transaction completed successfully
+      - name: customer_segment
+        description: Customer segment at time of transaction
+      - name: customer_plan_type
+        description: Customer plan type at time of transaction
+      - name: product_category
+        description: Product category at time of transaction
+      - name: product_price
+        description: Product price at time of transaction
+
+    # Data quality tests
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "amount >= 0"
+          config:
+            where: "status NOT IN ('refunded')"
+
+  - name: fct_marketing_events
+    description: |
+      Marketing funnel fact table with pre-calculated metrics.
+      Links to channel dimension for historical attribution analysis.
+    columns:
+      - name: event_id
+        description: Unique marketing event identifier
+        tests:
+          - unique
+          - not_null
+      - name: event_date
+        description: Date of marketing event
+        tests:
+          - not_null
+      - name: date_key
+        description: Foreign key to dim_date
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+              config:
+                where: "date_key IS NOT NULL"
+      - name: channel_sk
+        description: Foreign key to dim_channel (point-in-time)
+        tests:
+          - relationships:
+              to: ref('dim_channel')
+              field: channel_sk
+              config:
+                where: "channel_sk IS NOT NULL"
+      - name: leads
+        description: Number of leads generated
+        tests:
+          - not_null
+      - name: conversions
+        description: Number of conversions
+        tests:
+          - not_null
+      - name: spend
+        description: Marketing spend amount
+        tests:
+          - not_null
+      - name: conversion_rate
+        description: Conversion rate percentage (conversions / leads * 100)
+      - name: cost_per_lead
+        description: Cost per lead (spend / leads)
+      - name: cost_per_conversion
+        description: Cost per conversion (spend / conversions)
+      - name: estimated_roas
+        description: Estimated return on ad spend
+
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "conversions <= leads"
+      - dbt_utils.expression_is_true:
+          expression: "spend >= 0"

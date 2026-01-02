@@ -20,3 +20,13 @@ echo:
       dbname: "{{ env_var('DB_NAME') }}"
       schema: public
       threads: 8
+
+    ci:
+      type: postgres
+      host: "{{ env_var('DB_HOST', 'localhost') }}"
+      port: "{{ env_var('DB_PORT', '5432') | int }}"
+      user: "{{ env_var('DB_USER', 'test') }}"
+      password: "{{ env_var('DB_PASSWORD', 'test') }}"
+      dbname: "{{ env_var('DB_NAME', 'echo_test') }}"
+      schema: ci
+      threads: 2

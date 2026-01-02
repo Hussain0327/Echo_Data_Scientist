@@ -9,6 +9,7 @@ cleaned as (
         trim(coalesce(name, '')) as name,
         lower(trim(coalesce(segment, 'unknown'))) as segment,
         lower(trim(coalesce(plan_type, 'free'))) as plan_type,
+        lower(trim(coalesce(acquisition_channel, 'direct'))) as acquisition_channel,
         cast(created_at as timestamp) as created_at,
         cast(coalesce(updated_at, created_at) as timestamp) as updated_at,
         current_timestamp as _loaded_at

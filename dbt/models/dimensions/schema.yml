@@ -1,0 +1,198 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: |
+      Customer dimension with SCD Type 2 history tracking.
+      Tracks changes to customer segment, plan_type, and name over time.
+      Use is_current = TRUE for current state, or join on valid_from/valid_to
+      for point-in-time analysis.
+    columns:
+      - name: customer_sk
+        description: Surrogate key (unique per version)
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Natural/business key
+        tests:
+          - not_null
+      - name: email
+        description: Customer email address
+        tests:
+          - not_null
+      - name: name
+        description: Customer full name
+      - name: segment
+        description: Customer segment (starter, growth, professional, enterprise)
+        tests:
+          - accepted_values:
+              values: ['starter', 'growth', 'professional', 'enterprise']
+      - name: plan_type
+        description: Subscription plan type
+        tests:
+          - accepted_values:
+              values: ['free', 'basic', 'standard', 'premium', 'enterprise']
+      - name: acquisition_channel
+        description: Channel through which customer was acquired
+      - name: created_at
+        description: Original customer signup timestamp
+      - name: valid_from
+        description: When this version became active
+        tests:
+          - not_null
+      - name: valid_to
+        description: When this version was superseded (NULL if current)
+      - name: is_current
+        description: Flag indicating current active record
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+
+    # Data contracts: ensure only one current record per customer
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - customer_id
+            - is_current
+          where: "is_current = TRUE"
+
+  - name: dim_product
+    description: |
+      Product dimension with SCD Type 2 history tracking.
+      Tracks price changes and category reclassifications over time.
+      Critical for accurate historical revenue analysis.
+    columns:
+      - name: product_sk
+        description: Surrogate key (unique per version)
+        tests:
+          - unique
+          - not_null
+      - name: product_id
+        description: Natural/business key
+        tests:
+          - not_null
+      - name: name
+        description: Product name
+        tests:
+          - not_null
+      - name: category
+        description: Product category
+        tests:
+          - accepted_values:
+              values: ['analytics', 'integration', 'automation', 'reporting', 'api_access']
+      - name: price
+        description: Current product price
+        tests:
+          - not_null
+      - name: created_at
+        description: Product creation timestamp
+      - name: valid_from
+        description: When this version became active
+        tests:
+          - not_null
+      - name: valid_to
+        description: When this version was superseded (NULL if current)
+      - name: is_current
+        description: Flag indicating current active record
+        tests:
+          - not_null
+      - name: price_change_pct
+        description: Percentage change from previous price (NULL for initial version)
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - product_id
+            - is_current
+          where: "is_current = TRUE"
+
+  - name: dim_channel
+    description: |
+      Marketing channel dimension with SCD Type 2 history tracking.
+      Tracks channel reclassifications (e.g., "sem" to "paid_search").
+    columns:
+      - name: channel_sk
+        description: Surrogate key (unique per version)
+        tests:
+          - unique
+          - not_null
+      - name: channel_id
+        description: Natural/business key
+        tests:
+          - not_null
+      - name: channel_name
+        description: Channel name
+        tests:
+          - not_null
+      - name: channel_type
+        description: Channel type classification (paid, organic, owned, other)
+        tests:
+          - accepted_values:
+              values: ['paid', 'organic', 'owned', 'other']
+      - name: is_paid
+        description: Whether this is a paid channel
+        tests:
+          - not_null
+      - name: first_seen_at
+        description: First time this channel appeared in data
+      - name: valid_from
+        description: When this version became active
+        tests:
+          - not_null
+      - name: valid_to
+        description: When this version was superseded (NULL if current)
+      - name: is_current
+        description: Flag indicating current active record
+        tests:
+          - not_null
+
+  - name: dim_date
+    description: |
+      Standard date dimension for time-based analysis.
+      Provides calendar attributes for any date from 2020 to 2030.
+      Includes fiscal year support (July start) and relative date flags.
+    columns:
+      - name: date_key
+        description: Date value (primary key)
+        tests:
+          - unique
+          - not_null
+      - name: year
+        description: Calendar year
+        tests:
+          - not_null
+      - name: quarter
+        description: Calendar quarter (1-4)
+        tests:
+          - accepted_values:
+              values: [1, 2, 3, 4]
+      - name: month
+        description: Calendar month (1-12)
+      - name: week_of_year
+        description: Week number within year (1-53)
+      - name: day_of_month
+        description: Day of month (1-31)
+      - name: day_of_week
+        description: Day of week (0=Sunday, 6=Saturday)
+      - name: year_month
+        description: Year-month string (YYYY-MM)
+      - name: day_name
+        description: Full day name (Monday, Tuesday, etc.)
+      - name: month_name
+        description: Full month name (January, February, etc.)
+      - name: fiscal_year
+        description: Fiscal year (July-June)
+      - name: fiscal_quarter
+        description: Fiscal quarter (1-4)
+      - name: is_weekend
+        description: True if Saturday or Sunday
+      - name: is_weekday
+        description: True if Monday through Friday
+      - name: is_current_month
+        description: True if in current calendar month
+      - name: is_ytd
+        description: True if in year-to-date range
+      - name: days_ago
+        description: Number of days before today (negative for future)
