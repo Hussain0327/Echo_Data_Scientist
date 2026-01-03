@@ -1,35 +1,38 @@
-import pytest
-import pandas as pd
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime
 
-from app.services.reports.generator import ReportGenerator, GeneratedReport
+import pandas as pd
+import pytest
+
+from app.services.reports.generator import GeneratedReport, ReportGenerator
 
 
 class TestReportGenerator:
-
     @pytest.fixture
     def revenue_df(self):
-        return pd.DataFrame({
-            'date': pd.date_range('2024-01-01', periods=100),
-            'amount': [100.0 + i for i in range(100)],
-            'status': ['paid'] * 100,
-            'customer_id': [f'cust_{i % 20}' for i in range(100)],
-        })
+        return pd.DataFrame(
+            {
+                "date": pd.date_range("2024-01-01", periods=100),
+                "amount": [100.0 + i for i in range(100)],
+                "status": ["paid"] * 100,
+                "customer_id": [f"cust_{i % 20}" for i in range(100)],
+            }
+        )
 
     @pytest.fixture
     def marketing_df(self):
-        return pd.DataFrame({
-            'date': pd.date_range('2024-01-01', periods=50),
-            'source': ['Google Ads', 'Facebook'] * 25,
-            'leads': [100 + i for i in range(50)],
-            'conversions': [10 + i for i in range(50)],
-            'spend': [500.0 + i * 10 for i in range(50)],
-        })
+        return pd.DataFrame(
+            {
+                "date": pd.date_range("2024-01-01", periods=50),
+                "source": ["Google Ads", "Facebook"] * 25,
+                "leads": [100 + i for i in range(50)],
+                "conversions": [10 + i for i in range(50)],
+                "spend": [500.0 + i * 10 for i in range(50)],
+            }
+        )
 
     @pytest.fixture
     def mock_conversation_service(self):
-        with patch('app.services.reports.generator.ConversationService') as mock:
+        with patch("app.services.reports.generator.ConversationService") as mock:
             service = MagicMock()
             response = AsyncMock()
             response.message = "This is a test narrative."
@@ -44,13 +47,15 @@ class TestReportGenerator:
 
     def test_validate_data_success(self, generator, revenue_df):
         from app.services.reports.templates import get_template
+
         template = get_template("revenue_health")
         generator._validate_data(revenue_df, template)
 
     def test_validate_data_missing_columns(self, generator):
         from app.services.reports.templates import get_template
+
         template = get_template("revenue_health")
-        bad_df = pd.DataFrame({'wrong_col': [1, 2, 3]})
+        bad_df = pd.DataFrame({"wrong_col": [1, 2, 3]})
 
         with pytest.raises(ValueError) as exc_info:
             generator._validate_data(bad_df, template)
@@ -58,6 +63,7 @@ class TestReportGenerator:
 
     def test_calculate_metrics_revenue(self, generator, revenue_df):
         from app.services.reports.templates import get_template
+
         template = get_template("revenue_health")
 
         metrics = generator._calculate_metrics(revenue_df, template)
@@ -69,6 +75,7 @@ class TestReportGenerator:
 
     def test_calculate_metrics_marketing(self, generator, marketing_df):
         from app.services.reports.templates import get_template
+
         template = get_template("marketing_funnel")
 
         metrics = generator._calculate_metrics(marketing_df, template)
@@ -79,6 +86,7 @@ class TestReportGenerator:
 
     def test_format_metrics_for_llm(self, generator, revenue_df):
         from app.services.reports.templates import get_template
+
         template = get_template("revenue_health")
         metrics = generator._calculate_metrics(revenue_df, template)
 
@@ -96,7 +104,7 @@ class TestReportGenerator:
             section_type=TemplateSection.EXECUTIVE_SUMMARY,
             prompt="Summarize the data",
             metrics_formatted="Total Revenue: $10,000",
-            data_summary="100 rows"
+            data_summary="100 rows",
         )
 
         assert narrative == "This is a test narrative."
@@ -106,9 +114,7 @@ class TestReportGenerator:
     @pytest.mark.asyncio
     async def test_generate_full_report(self, generator, revenue_df):
         report = await generator.generate(
-            df=revenue_df,
-            template_type="revenue_health",
-            user_id="test_user"
+            df=revenue_df, template_type="revenue_health", user_id="test_user"
         )
 
         assert isinstance(report, GeneratedReport)
@@ -122,18 +128,12 @@ class TestReportGenerator:
     @pytest.mark.asyncio
     async def test_generate_invalid_template(self, generator, revenue_df):
         with pytest.raises(ValueError):
-            await generator.generate(
-                df=revenue_df,
-                template_type="invalid_template"
-            )
+            await generator.generate(df=revenue_df, template_type="invalid_template")
 
     @pytest.mark.asyncio
     async def test_generate_missing_data(self, generator):
-        bad_df = pd.DataFrame({'wrong_col': [1, 2, 3]})
+        bad_df = pd.DataFrame({"wrong_col": [1, 2, 3]})
 
         with pytest.raises(ValueError) as exc_info:
-            await generator.generate(
-                df=bad_df,
-                template_type="revenue_health"
-            )
+            await generator.generate(df=bad_df, template_type="revenue_health")
         assert "Missing required columns" in str(exc_info.value)

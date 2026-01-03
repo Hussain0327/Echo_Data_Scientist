@@ -1,6 +1,7 @@
 import math
-from typing import Tuple, Optional
 from dataclasses import dataclass
+from typing import Optional, Tuple
+
 from scipy import stats as scipy_stats
 
 
@@ -47,17 +48,14 @@ def calculate_lift(control_rate: float, variant_rate: float) -> Tuple[float, flo
 
     # Relative lift as percentage improvement
     if control_rate == 0:
-        relative_lift = float('inf') if variant_rate > 0 else 0.0
+        relative_lift = float("inf") if variant_rate > 0 else 0.0
     else:
         relative_lift = ((variant_rate - control_rate) / control_rate) * 100
 
     return absolute_lift, relative_lift
 
 
-def calculate_pooled_proportion(
-    control: VariantData,
-    variant: VariantData
-) -> float:
+def calculate_pooled_proportion(control: VariantData, variant: VariantData) -> float:
     total_conversions = control.conversions + variant.conversions
     total_users = control.users + variant.users
 
@@ -68,30 +66,21 @@ def calculate_pooled_proportion(
 
 
 def calculate_standard_error(
-    control: VariantData,
-    variant: VariantData,
-    pooled: bool = True
+    control: VariantData, variant: VariantData, pooled: bool = True
 ) -> float:
     if pooled:
         p_pooled = calculate_pooled_proportion(control, variant)
-        se = math.sqrt(
-            p_pooled * (1 - p_pooled) * (1/control.users + 1/variant.users)
-        )
+        se = math.sqrt(p_pooled * (1 - p_pooled) * (1 / control.users + 1 / variant.users))
     else:
         # Unpooled SE for confidence intervals
         p1 = control.conversion_rate
         p2 = variant.conversion_rate
-        se = math.sqrt(
-            (p1 * (1 - p1) / control.users) + (p2 * (1 - p2) / variant.users)
-        )
+        se = math.sqrt((p1 * (1 - p1) / control.users) + (p2 * (1 - p2) / variant.users))
 
     return se
 
 
-def run_proportion_z_test(
-    control: VariantData,
-    variant: VariantData
-) -> Tuple[float, float]:
+def run_proportion_z_test(control: VariantData, variant: VariantData) -> Tuple[float, float]:
     p1 = control.conversion_rate
     p2 = variant.conversion_rate
 
@@ -109,9 +98,7 @@ def run_proportion_z_test(
 
 
 def calculate_confidence_interval(
-    control: VariantData,
-    variant: VariantData,
-    confidence_level: float = 0.95
+    control: VariantData, variant: VariantData, confidence_level: float = 0.95
 ) -> Tuple[float, float]:
     p1 = control.conversion_rate
     p2 = variant.conversion_rate
@@ -134,10 +121,7 @@ def calculate_confidence_interval(
 
 
 def calculate_sample_size_requirement(
-    baseline_rate: float,
-    minimum_detectable_effect: float,
-    alpha: float = 0.05,
-    power: float = 0.80
+    baseline_rate: float, minimum_detectable_effect: float, alpha: float = 0.05, power: float = 0.80
 ) -> int:
     if baseline_rate <= 0 or baseline_rate >= 1:
         return 0
@@ -156,8 +140,8 @@ def calculate_sample_size_requirement(
 
     # Sample size formula
     numerator = (
-        z_alpha * math.sqrt(2 * p_pooled * (1 - p_pooled)) +
-        z_beta * math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))
+        z_alpha * math.sqrt(2 * p_pooled * (1 - p_pooled))
+        + z_beta * math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))
     ) ** 2
 
     denominator = (p2 - p1) ** 2
@@ -171,9 +155,7 @@ def calculate_sample_size_requirement(
 
 
 def calculate_statistical_power(
-    control: VariantData,
-    variant: VariantData,
-    alpha: float = 0.05
+    control: VariantData, variant: VariantData, alpha: float = 0.05
 ) -> float:
     p1 = control.conversion_rate
     p2 = variant.conversion_rate
@@ -186,14 +168,10 @@ def calculate_statistical_power(
 
     # Pooled SE under null
     p_pooled = calculate_pooled_proportion(control, variant)
-    se_null = math.sqrt(
-        2 * p_pooled * (1 - p_pooled) / min(control.users, variant.users)
-    )
+    se_null = math.sqrt(2 * p_pooled * (1 - p_pooled) / min(control.users, variant.users))
 
     # SE under alternative
-    se_alt = math.sqrt(
-        (p1 * (1 - p1) / control.users) + (p2 * (1 - p2) / variant.users)
-    )
+    se_alt = math.sqrt((p1 * (1 - p1) / control.users) + (p2 * (1 - p2) / variant.users))
 
     if se_alt == 0:
         return 1.0 if effect > 0 else alpha
@@ -208,15 +186,12 @@ def calculate_statistical_power(
     return min(max(power, 0), 1)
 
 
-def make_decision(
-    analysis: ExperimentAnalysis,
-    alpha: float = 0.05
-) -> Tuple[str, str]:
+def make_decision(analysis: ExperimentAnalysis, alpha: float = 0.05) -> Tuple[str, str]:
     if not analysis.sample_size_adequate:
         return (
             "inconclusive",
-            f"Insufficient sample size. The test may not have enough power to detect "
-            f"the expected effect. Consider running longer to collect more data."
+            "Insufficient sample size. The test may not have enough power to detect "
+            "the expected effect. Consider running longer to collect more data.",
         )
 
     if analysis.p_value > alpha:
@@ -224,7 +199,7 @@ def make_decision(
             "inconclusive",
             f"The difference is not statistically significant (p={analysis.p_value:.4f} > {alpha}). "
             f"We cannot confidently conclude there is a real difference between variants. "
-            f"The observed {analysis.relative_lift:+.1f}% lift could be due to random chance."
+            f"The observed {analysis.relative_lift:+.1f}% lift could be due to random chance.",
         )
 
     if analysis.relative_lift > 0:
@@ -234,7 +209,7 @@ def make_decision(
             f"The variant shows a {analysis.relative_lift:+.1f}% relative improvement "
             f"({analysis.absolute_lift:+.2f} percentage points). "
             f"95% CI: [{analysis.confidence_interval_lower:+.2f}, {analysis.confidence_interval_upper:+.2f}] pp. "
-            f"Recommend shipping the variant."
+            f"Recommend shipping the variant.",
         )
     else:
         return (
@@ -242,7 +217,7 @@ def make_decision(
             f"Statistically significant negative effect detected (p={analysis.p_value:.4f}). "
             f"The variant shows a {analysis.relative_lift:.1f}% relative decrease "
             f"({analysis.absolute_lift:.2f} percentage points). "
-            f"Recommend keeping the control."
+            f"Recommend keeping the control.",
         )
 
 
@@ -250,7 +225,7 @@ def analyze_experiment(
     control: VariantData,
     variant: VariantData,
     alpha: float = 0.05,
-    minimum_sample_size: Optional[int] = None
+    minimum_sample_size: Optional[int] = None,
 ) -> ExperimentAnalysis:
     # Calculate conversion rates
     control_rate = control.conversion_rate
@@ -271,15 +246,12 @@ def analyze_experiment(
     # Check sample size adequacy
     if minimum_sample_size:
         sample_size_adequate = (
-            control.users >= minimum_sample_size and
-            variant.users >= minimum_sample_size
+            control.users >= minimum_sample_size and variant.users >= minimum_sample_size
         )
     else:
         # Rule of thumb: at least 100 per variant, or enough for 80% power
         sample_size_adequate = (
-            control.users >= 100 and
-            variant.users >= 100 and
-            power >= 0.5  # At least 50% power
+            control.users >= 100 and variant.users >= 100 and power >= 0.5  # At least 50% power
         )
 
     # Build analysis object
@@ -294,7 +266,7 @@ def analyze_experiment(
         p_value=p_value,
         is_significant=p_value <= alpha,
         sample_size_adequate=sample_size_adequate,
-        power=power
+        power=power,
     )
 
     # Make decision

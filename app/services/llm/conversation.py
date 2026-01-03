@@ -1,7 +1,8 @@
-from typing import Optional, Dict, Any, List
 from datetime import datetime
-from pydantic import BaseModel
+from typing import Any, Dict, List, Optional
+
 from openai import AsyncOpenAI
+from pydantic import BaseModel
 
 from app.config import get_settings
 from app.services.llm.prompts.consultant import build_system_prompt
@@ -39,14 +40,13 @@ class ChatResponse(BaseModel):
 
 
 class ConversationService:
-
     def __init__(self):
         settings = get_settings()
 
         # DeepSeek uses OpenAI-compatible API
         self.client = AsyncOpenAI(
             api_key=settings.DEEPSEEK_API_KEY or settings.OPENAI_API_KEY,
-            base_url=settings.DEEPSEEK_BASE_URL if settings.DEEPSEEK_API_KEY else None
+            base_url=settings.DEEPSEEK_BASE_URL if settings.DEEPSEEK_API_KEY else None,
         )
         self.model = settings.DEEPSEEK_MODEL if settings.DEEPSEEK_API_KEY else "gpt-4-turbo-preview"
 
@@ -62,7 +62,7 @@ class ConversationService:
         self,
         session_id: str,
         data_summary: Optional[str] = None,
-        metrics_summary: Optional[str] = None
+        metrics_summary: Optional[str] = None,
     ) -> None:
         session = self.get_or_create_session(session_id)
         if data_summary is not None:
@@ -83,13 +83,15 @@ class ConversationService:
 
         return "\n".join(formatted)
 
-    def _build_messages(self, session: ConversationContext, user_message: str) -> List[Dict[str, str]]:
+    def _build_messages(
+        self, session: ConversationContext, user_message: str
+    ) -> List[Dict[str, str]]:
         # Build system prompt with context
         conversation_history = self._format_conversation_history(session.messages)
         system_prompt = build_system_prompt(
             data_summary=session.data_summary,
             metrics_summary=session.metrics_summary,
-            conversation_history=conversation_history
+            conversation_history=conversation_history,
         )
 
         messages = [{"role": "system", "content": system_prompt}]
@@ -108,9 +110,8 @@ class ConversationService:
         session_id: str,
         user_message: str,
         data_summary: Optional[str] = None,
-        metrics_summary: Optional[str] = None
+        metrics_summary: Optional[str] = None,
     ) -> ChatResponse:
-
         # Get or create session
         session = self.get_or_create_session(session_id)
 
@@ -139,9 +140,7 @@ class ConversationService:
         session.messages.append(Message(role="assistant", content=assistant_message))
 
         return ChatResponse(
-            message=assistant_message,
-            session_id=session_id,
-            tokens_used=tokens_used
+            message=assistant_message, session_id=session_id, tokens_used=tokens_used
         )
 
     def clear_session(self, session_id: str) -> bool:

@@ -1,7 +1,8 @@
-from pydantic_settings import BaseSettings
-from pydantic import field_validator
 from functools import lru_cache
 from typing import List, Union
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -48,6 +49,7 @@ class Settings(BaseSettings):
             # Handle both comma-separated and JSON array strings
             if v.strip().startswith("["):
                 import json
+
                 return json.loads(v)
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v

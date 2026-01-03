@@ -1,7 +1,11 @@
-from sqlalchemy import Column, String, DateTime, JSON, Integer, Enum as SQLEnum
-from sqlalchemy.sql import func
-from app.core.database import Base
 import enum
+
+from sqlalchemy import JSON, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import Integer, String
+from sqlalchemy.sql import func
+
+from app.core.database import Base
 
 
 class SourceType(str, enum.Enum):

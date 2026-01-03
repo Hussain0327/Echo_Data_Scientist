@@ -1,17 +1,18 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.config import get_settings
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.v1.router import api_router
-from app.core.database import init_db, close_db
+from app.config import get_settings
 from app.core.cache import close_redis
+from app.core.database import close_db, init_db
 from app.middleware import TelemetryMiddleware
 from app.models.data_source import DataSource  # noqa: F401
+from app.models.experiment import Experiment, VariantResult  # noqa: F401
+from app.models.feedback import Feedback  # noqa: F401
 from app.models.report import Report  # noqa: F401
 from app.models.usage_metric import UsageMetric  # noqa: F401
-from app.models.feedback import Feedback  # noqa: F401
-from app.models.experiment import Experiment, VariantResult  # noqa: F401
 
 settings = get_settings()
 
@@ -61,5 +62,5 @@ async def root():
         "app": settings.APP_NAME,
         "version": "0.1.0",
         "environment": settings.ENVIRONMENT,
-        "llm": "DeepSeek 3.2 Exp"
+        "llm": "DeepSeek 3.2 Exp",
     }

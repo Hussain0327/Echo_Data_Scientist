@@ -1,15 +1,14 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from typing import Any, Dict, Optional
 
-from app.models.usage_metric import UsageMetric, TaskType
-from app.models.schemas import StartSessionRequest, SessionResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.usage_metric import TaskType, UsageMetric
 
 
 class TrackingService:
-
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -19,7 +18,7 @@ class TrackingService:
         user_id: str = "default",
         session_id: Optional[str] = None,
         baseline_time_seconds: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> UsageMetric:
         metric = UsageMetric(
             id=str(uuid.uuid4()),
@@ -27,7 +26,7 @@ class TrackingService:
             session_id=session_id,
             task_type=task_type,
             baseline_time_seconds=baseline_time_seconds,
-            metadata_=metadata or {}
+            metadata_=metadata or {},
         )
 
         self.db.add(metric)
@@ -36,14 +35,9 @@ class TrackingService:
 
         return metric
 
-    async def end_session(
-        self,
-        metric_id: str,
-        user_id: str = "default"
-    ) -> Optional[UsageMetric]:
+    async def end_session(self, metric_id: str, user_id: str = "default") -> Optional[UsageMetric]:
         stmt = select(UsageMetric).where(
-            UsageMetric.id == metric_id,
-            UsageMetric.user_id == user_id
+            UsageMetric.id == metric_id, UsageMetric.user_id == user_id
         )
         result = await self.db.execute(stmt)
         metric = result.scalar_one_or_none()
@@ -65,22 +59,15 @@ class TrackingService:
 
         return metric
 
-    async def get_session(
-        self,
-        metric_id: str,
-        user_id: str = "default"
-    ) -> Optional[UsageMetric]:
+    async def get_session(self, metric_id: str, user_id: str = "default") -> Optional[UsageMetric]:
         stmt = select(UsageMetric).where(
-            UsageMetric.id == metric_id,
-            UsageMetric.user_id == user_id
+            UsageMetric.id == metric_id, UsageMetric.user_id == user_id
         )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def get_user_sessions(
-        self,
-        user_id: str = "default",
-        limit: int = 100
+        self, user_id: str = "default", limit: int = 100
     ) -> list[UsageMetric]:
         stmt = (
             select(UsageMetric)

@@ -1,15 +1,15 @@
 import pytest
+
 from app.services.reports.templates import (
+    FINANCIAL_OVERVIEW_TEMPLATE,
+    MARKETING_FUNNEL_TEMPLATE,
+    REVENUE_HEALTH_TEMPLATE,
     get_template,
     list_templates,
-    REVENUE_HEALTH_TEMPLATE,
-    MARKETING_FUNNEL_TEMPLATE,
-    FINANCIAL_OVERVIEW_TEMPLATE,
 )
 
 
 class TestReportTemplates:
-
     def test_revenue_health_template(self):
         template = REVENUE_HEALTH_TEMPLATE
         assert template.template_type == "revenue_health"

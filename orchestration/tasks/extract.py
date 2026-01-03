@@ -1,6 +1,7 @@
-import pandas as pd
 from pathlib import Path
 from typing import Optional
+
+import pandas as pd
 from prefect import task
 from prefect.logging import get_run_logger
 
@@ -36,10 +37,7 @@ def extract_excel(file_path: str, sheet_name: Optional[str] = None) -> pd.DataFr
 
 
 @task
-def extract_from_directory(
-    directory: str,
-    pattern: str = "*.csv"
-) -> dict[str, pd.DataFrame]:
+def extract_from_directory(directory: str, pattern: str = "*.csv") -> dict[str, pd.DataFrame]:
     logger = get_run_logger()
     dir_path = Path(directory)
 
@@ -62,10 +60,7 @@ def extract_from_directory(
 
 
 @task
-def extract_from_database(
-    query: str,
-    connection_string: str
-) -> pd.DataFrame:
+def extract_from_database(query: str, connection_string: str) -> pd.DataFrame:
     logger = get_run_logger()
     from sqlalchemy import create_engine
 

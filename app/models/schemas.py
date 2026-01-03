@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, List, Any
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class SourceTypeEnum(str, Enum):
@@ -191,10 +192,16 @@ class CreateExperimentRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     hypothesis: str = Field(..., min_length=10, description="The hypothesis being tested")
     description: Optional[str] = None
-    primary_metric: str = Field(..., description="Primary KPI to measure (e.g., 'signup_conversion')")
+    primary_metric: str = Field(
+        ..., description="Primary KPI to measure (e.g., 'signup_conversion')"
+    )
     secondary_metrics: Optional[List[str]] = None
-    funnel_stage: Optional[str] = Field(None, description="Funnel stage being tested (signup, activation, retention)")
-    significance_level: float = Field(0.05, ge=0.01, le=0.20, description="Alpha level for statistical significance")
+    funnel_stage: Optional[str] = Field(
+        None, description="Funnel stage being tested (signup, activation, retention)"
+    )
+    significance_level: float = Field(
+        0.05, ge=0.01, le=0.20, description="Alpha level for statistical significance"
+    )
     minimum_detectable_effect: Optional[float] = Field(None, description="MDE in percentage points")
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
@@ -221,7 +228,9 @@ class VariantResultRequest(BaseModel):
 
 
 class SubmitVariantResultsRequest(BaseModel):
-    variants: List[VariantResultRequest] = Field(..., min_length=2, description="Results for each variant (min 2)")
+    variants: List[VariantResultRequest] = Field(
+        ..., min_length=2, description="Results for each variant (min 2)"
+    )
 
 
 class VariantResultResponse(BaseModel):

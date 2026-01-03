@@ -21,12 +21,11 @@ Usage:
 
 import argparse
 import json
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
 
-from benchmarks.query_benchmarks import QueryBenchmark, BenchmarkSuite
+from benchmarks.query_benchmarks import BenchmarkSuite, QueryBenchmark
 
 
 def run_single_benchmark(table: str, scale: str) -> BenchmarkSuite:
@@ -55,9 +54,9 @@ def generate_full_report(suites: list[BenchmarkSuite]) -> str:
         "",
         "## Environment",
         "",
-        f"- PostgreSQL 15",
-        f"- Database: echo_db",
-        f"- Connection pool: 10 connections",
+        "- PostgreSQL 15",
+        "- Database: echo_db",
+        "- Connection pool: 10 connections",
         "",
         "## Summary Table",
         "",
@@ -83,21 +82,25 @@ def generate_full_report(suites: list[BenchmarkSuite]) -> str:
 
             lines.append(row)
 
-    lines.extend([
-        "",
-        "## Detailed Results",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Detailed Results",
+            "",
+        ]
+    )
 
     for suite in suites:
         lines.append(suite.to_markdown_table())
         lines.append("")
 
     # Add insights section
-    lines.extend([
-        "## Key Insights",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Key Insights",
+            "",
+        ]
+    )
 
     if len(suites) >= 2:
         # Compare smallest vs largest scale
@@ -142,18 +145,20 @@ def save_results(suites: list[BenchmarkSuite], output_path: Path):
         }
 
         for r in suite.results:
-            suite_data["results"].append({
-                "query_name": r.query_name,
-                "category": r.category.value,
-                "cold_time_ms": r.cold_time_ms,
-                "warm_time_ms": r.warm_time_ms,
-                "rows_returned": r.rows_returned,
-                "rows_scanned": r.rows_scanned,
-                "partitions_scanned": r.partitions_scanned,
-                "index_used": r.index_used,
-                "seq_scan": r.seq_scan,
-                "error": r.error,
-            })
+            suite_data["results"].append(
+                {
+                    "query_name": r.query_name,
+                    "category": r.category.value,
+                    "cold_time_ms": r.cold_time_ms,
+                    "warm_time_ms": r.warm_time_ms,
+                    "rows_returned": r.rows_returned,
+                    "rows_scanned": r.rows_scanned,
+                    "partitions_scanned": r.partitions_scanned,
+                    "index_used": r.index_used,
+                    "seq_scan": r.seq_scan,
+                    "error": r.error,
+                }
+            )
 
         data["suites"].append(suite_data)
 

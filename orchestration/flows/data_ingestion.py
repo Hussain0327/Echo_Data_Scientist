@@ -2,26 +2,39 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
 from prefect import flow, get_run_logger
 
 from orchestration.tasks.extract import extract_csv, extract_excel
-from orchestration.tasks.validate import run_expectations
+from orchestration.tasks.load import load_to_staging
 from orchestration.tasks.transform import apply_transformations, run_dbt
-from orchestration.tasks.load import load_to_staging, load_to_warehouse
-
+from orchestration.tasks.validate import run_expectations
 
 DATA_EXPECTATIONS = {
     "revenue": [
         {"expectation_type": "expect_column_to_exist", "column": "amount"},
         {"expectation_type": "expect_column_to_exist", "column": "date"},
         {"expectation_type": "expect_column_values_to_not_be_null", "column": "amount"},
-        {"expectation_type": "expect_column_values_to_be_between", "column": "amount", "min_value": 0, "max_value": 10000000},
+        {
+            "expectation_type": "expect_column_values_to_be_between",
+            "column": "amount",
+            "min_value": 0,
+            "max_value": 10000000,
+        },
     ],
     "marketing": [
         {"expectation_type": "expect_column_to_exist", "column": "source"},
         {"expectation_type": "expect_column_values_to_not_be_null", "column": "source"},
-        {"expectation_type": "expect_column_values_to_be_between", "column": "leads", "min_value": 0},
-        {"expectation_type": "expect_column_values_to_be_between", "column": "conversions", "min_value": 0},
+        {
+            "expectation_type": "expect_column_values_to_be_between",
+            "column": "leads",
+            "min_value": 0,
+        },
+        {
+            "expectation_type": "expect_column_values_to_be_between",
+            "column": "conversions",
+            "min_value": 0,
+        },
     ],
     "customers": [
         {"expectation_type": "expect_column_to_exist", "column": "customer_id"},
@@ -31,7 +44,11 @@ DATA_EXPECTATIONS = {
     "experiments": [
         {"expectation_type": "expect_column_to_exist", "column": "variant"},
         {"expectation_type": "expect_column_to_exist", "column": "user_id"},
-        {"expectation_type": "expect_column_values_to_be_in_set", "column": "variant", "value_set": ["control", "variant_a", "variant_b", "treatment"]},
+        {
+            "expectation_type": "expect_column_values_to_be_in_set",
+            "column": "variant",
+            "value_set": ["control", "variant_a", "variant_b", "treatment"],
+        },
     ],
 }
 
@@ -42,7 +59,7 @@ def data_ingestion_pipeline(
     data_type: str,
     connection_string: Optional[str] = None,
     run_dbt_after: bool = True,
-    fail_on_validation_error: bool = False
+    fail_on_validation_error: bool = False,
 ):
     logger = get_run_logger()
     logger.info(f"Starting ingestion pipeline for {data_type} data")
@@ -65,9 +82,12 @@ def data_ingestion_pipeline(
         if not validation["success"] and fail_on_validation_error:
             raise ValueError(f"Data validation failed for {data_type}")
 
-    clean_df = apply_transformations(raw_df, [
-        {"type": "drop_duplicates", "column": None, "params": {}},
-    ])
+    clean_df = apply_transformations(
+        raw_df,
+        [
+            {"type": "drop_duplicates", "column": None, "params": {}},
+        ],
+    )
 
     staging_result = None
     if conn_str:
@@ -93,7 +113,7 @@ def batch_ingestion_pipeline(
     source_directory: str,
     data_type: str,
     file_pattern: str = "*.csv",
-    connection_string: Optional[str] = None
+    connection_string: Optional[str] = None,
 ):
     logger = get_run_logger()
     source_path = Path(source_directory)

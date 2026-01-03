@@ -43,14 +43,22 @@ INLINE_EXPECTATIONS = {
         {"expectation_type": "expect_column_to_exist", "column": "amount"},
         {"expectation_type": "expect_column_to_exist", "column": "date"},
         {"expectation_type": "expect_column_values_to_not_be_null", "column": "amount"},
-        {"expectation_type": "expect_column_values_to_be_between", "column": "amount", "min_value": 0},
+        {
+            "expectation_type": "expect_column_values_to_be_between",
+            "column": "amount",
+            "min_value": 0,
+        },
     ],
     "marketing": [
         {"expectation_type": "expect_column_to_exist", "column": "source"},
         {"expectation_type": "expect_column_to_exist", "column": "leads"},
         {"expectation_type": "expect_column_to_exist", "column": "conversions"},
         {"expectation_type": "expect_column_values_to_not_be_null", "column": "source"},
-        {"expectation_type": "expect_column_values_to_be_between", "column": "leads", "min_value": 0},
+        {
+            "expectation_type": "expect_column_values_to_be_between",
+            "column": "leads",
+            "min_value": 0,
+        },
     ],
     "experiment": [
         {"expectation_type": "expect_column_to_exist", "column": "user_id"},

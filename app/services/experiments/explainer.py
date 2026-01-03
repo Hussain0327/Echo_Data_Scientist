@@ -1,9 +1,7 @@
-from typing import Optional
 from openai import AsyncOpenAI
 
 from app.config import get_settings
-from app.models.schemas import ExperimentSummary, ExperimentExplanation
-
+from app.models.schemas import ExperimentExplanation, ExperimentSummary
 
 EXPLAINER_SYSTEM_PROMPT = """You are Echo, a data science consultant explaining A/B test results to business stakeholders.
 
@@ -57,13 +55,12 @@ RATIONALE: {summary.decision_rationale}
 
 
 class ExperimentExplainer:
-
     def __init__(self):
         settings = get_settings()
 
         self.client = AsyncOpenAI(
             api_key=settings.DEEPSEEK_API_KEY or settings.OPENAI_API_KEY,
-            base_url=settings.DEEPSEEK_BASE_URL if settings.DEEPSEEK_API_KEY else None
+            base_url=settings.DEEPSEEK_BASE_URL if settings.DEEPSEEK_API_KEY else None,
         )
         self.model = settings.DEEPSEEK_MODEL if settings.DEEPSEEK_API_KEY else "gpt-4-turbo-preview"
 
@@ -100,7 +97,7 @@ NEXT STEPS:
             model=self.model,
             messages=[
                 {"role": "system", "content": EXPLAINER_SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
             max_tokens=1500,
             temperature=0.4,  # Lower temperature for more consistent output
@@ -113,11 +110,7 @@ NEXT STEPS:
 
         return explanation
 
-    def _parse_explanation(
-        self,
-        experiment_id: str,
-        content: str
-    ) -> ExperimentExplanation:
+    def _parse_explanation(self, experiment_id: str, content: str) -> ExperimentExplanation:
         # Default values in case parsing fails
         summary_text = ""
         key_findings = []
@@ -125,8 +118,6 @@ NEXT STEPS:
         caveats = []
         next_steps = []
 
-        # Split by sections
-        sections = content.split("\n\n")
         current_section = None
 
         for line in content.split("\n"):
@@ -175,7 +166,8 @@ NEXT STEPS:
             experiment_id=experiment_id,
             summary=summary_text.strip() or "Analysis complete. See key findings below.",
             key_findings=key_findings or ["Results analyzed successfully."],
-            recommendation=recommendation.strip() or "Review the statistical analysis for decision.",
+            recommendation=recommendation.strip()
+            or "Review the statistical analysis for decision.",
             caveats=caveats or ["Consider external factors that may have influenced results."],
-            next_steps=next_steps or ["Monitor post-launch metrics if shipping variant."]
+            next_steps=next_steps or ["Monitor post-launch metrics if shipping variant."],
         )

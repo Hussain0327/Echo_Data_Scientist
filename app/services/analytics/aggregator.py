@@ -1,31 +1,28 @@
-from typing import Dict, List
-from datetime import datetime, timedelta
 from collections import defaultdict
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
-from app.models.usage_metric import UsageMetric, TaskType
-from app.models.feedback import Feedback, InteractionType, AccuracyRating
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.feedback import AccuracyRating, Feedback
 from app.models.report import Report
 from app.models.schemas import (
-    TimeSavingsStats,
-    SatisfactionStats,
     AccuracyStats,
-    UsageStats,
     AnalyticsOverview,
-    PortfolioStats
+    PortfolioStats,
+    SatisfactionStats,
+    TimeSavingsStats,
+    UsageStats,
 )
+from app.models.usage_metric import TaskType, UsageMetric
 
 
 class AnalyticsAggregator:
-
     def __init__(self, db: AsyncSession):
         self.db = db
 
     async def get_time_savings_stats(self, user_id: str = "default") -> TimeSavingsStats:
         stmt = select(UsageMetric).where(
-            UsageMetric.user_id == user_id,
-            UsageMetric.end_time.isnot(None)
+            UsageMetric.user_id == user_id, UsageMetric.end_time.isnot(None)
         )
         result = await self.db.execute(stmt)
         metrics = list(result.scalars().all())
@@ -34,9 +31,7 @@ class AnalyticsAggregator:
         total_time_saved_seconds = sum(
             m.time_saved_seconds for m in metrics if m.time_saved_seconds
         )
-        total_duration_seconds = sum(
-            m.duration_seconds for m in metrics if m.duration_seconds
-        )
+        total_duration_seconds = sum(m.duration_seconds for m in metrics if m.duration_seconds)
 
         sessions_by_task_type = defaultdict(int)
         for m in metrics:
@@ -44,17 +39,20 @@ class AnalyticsAggregator:
 
         return TimeSavingsStats(
             total_sessions=total_sessions,
-            total_time_saved_hours=round(total_time_saved_seconds / 3600, 2) if total_time_saved_seconds else 0.0,
-            avg_time_saved_hours=round((total_time_saved_seconds / total_sessions) / 3600, 2) if total_sessions > 0 and total_time_saved_seconds else 0.0,
-            avg_duration_minutes=round((total_duration_seconds / total_sessions) / 60, 2) if total_sessions > 0 and total_duration_seconds else 0.0,
-            sessions_by_task_type=dict(sessions_by_task_type)
+            total_time_saved_hours=round(total_time_saved_seconds / 3600, 2)
+            if total_time_saved_seconds
+            else 0.0,
+            avg_time_saved_hours=round((total_time_saved_seconds / total_sessions) / 3600, 2)
+            if total_sessions > 0 and total_time_saved_seconds
+            else 0.0,
+            avg_duration_minutes=round((total_duration_seconds / total_sessions) / 60, 2)
+            if total_sessions > 0 and total_duration_seconds
+            else 0.0,
+            sessions_by_task_type=dict(sessions_by_task_type),
         )
 
     async def get_satisfaction_stats(self, user_id: str = "default") -> SatisfactionStats:
-        stmt = select(Feedback).where(
-            Feedback.user_id == user_id,
-            Feedback.rating.isnot(None)
-        )
+        stmt = select(Feedback).where(Feedback.user_id == user_id, Feedback.rating.isnot(None))
         result = await self.db.execute(stmt)
         feedbacks = list(result.scalars().all())
 
@@ -70,21 +68,19 @@ class AnalyticsAggregator:
             ratings_by_type[f.interaction_type.value].append(f.rating)
 
         ratings_by_interaction_type = {
-            k: round(sum(v) / len(v), 2) if v else 0.0
-            for k, v in ratings_by_type.items()
+            k: round(sum(v) / len(v), 2) if v else 0.0 for k, v in ratings_by_type.items()
         }
 
         return SatisfactionStats(
             total_ratings=total_ratings,
             avg_rating=round(avg_rating, 2),
             rating_distribution=dict(rating_distribution),
-            ratings_by_interaction_type=ratings_by_interaction_type
+            ratings_by_interaction_type=ratings_by_interaction_type,
         )
 
     async def get_accuracy_stats(self, user_id: str = "default") -> AccuracyStats:
         stmt = select(Feedback).where(
-            Feedback.user_id == user_id,
-            Feedback.accuracy_rating != AccuracyRating.NOT_RATED
+            Feedback.user_id == user_id, Feedback.accuracy_rating != AccuracyRating.NOT_RATED
         )
         result = await self.db.execute(stmt)
         feedbacks = list(result.scalars().all())
@@ -105,7 +101,7 @@ class AnalyticsAggregator:
         return AccuracyStats(
             total_ratings=total_ratings,
             accuracy_rate=round(accuracy_rate, 4),
-            accuracy_distribution=dict(accuracy_distribution)
+            accuracy_distribution=dict(accuracy_distribution),
         )
 
     async def get_usage_stats(self, user_id: str = "default") -> UsageStats:
@@ -119,9 +115,7 @@ class AnalyticsAggregator:
 
         total_sessions = len(sessions)
         total_reports = len(reports)
-        total_chats = sum(
-            1 for s in sessions if s.task_type == TaskType.CHAT_INTERACTION
-        )
+        total_chats = sum(1 for s in sessions if s.task_type == TaskType.CHAT_INTERACTION)
 
         metric_usage = defaultdict(int)
         for report in reports:
@@ -129,11 +123,7 @@ class AnalyticsAggregator:
                 for metric_name in report.metrics.keys():
                     metric_usage[metric_name] += 1
 
-        most_used_metrics = sorted(
-            metric_usage.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:5]
+        most_used_metrics = sorted(metric_usage.items(), key=lambda x: x[1], reverse=True)[:5]
         most_used_metrics = [m[0] for m in most_used_metrics]
 
         sessions_per_day = defaultdict(int)
@@ -146,7 +136,7 @@ class AnalyticsAggregator:
             total_reports=total_reports,
             total_chats=total_chats,
             most_used_metrics=most_used_metrics,
-            sessions_per_day=dict(sessions_per_day)
+            sessions_per_day=dict(sessions_per_day),
         )
 
     async def get_overview(self, user_id: str = "default") -> AnalyticsOverview:
@@ -156,10 +146,7 @@ class AnalyticsAggregator:
         usage = await self.get_usage_stats(user_id)
 
         return AnalyticsOverview(
-            time_savings=time_savings,
-            satisfaction=satisfaction,
-            accuracy=accuracy,
-            usage=usage
+            time_savings=time_savings, satisfaction=satisfaction, accuracy=accuracy, usage=usage
         )
 
     async def get_portfolio_stats(self, user_id: str = "default") -> PortfolioStats:
@@ -171,7 +158,7 @@ class AnalyticsAggregator:
             "time_saved": f"Saved users an average of {overview.time_savings.avg_time_saved_hours} hours per analysis",
             "satisfaction": f"{overview.satisfaction.avg_rating}/5 average user satisfaction from {overview.satisfaction.total_ratings} ratings",
             "accuracy": f"{int(overview.accuracy.accuracy_rate * 100)}% accuracy on {overview.accuracy.total_ratings} insights",
-            "sessions": f"Processed {overview.usage.total_sessions} sessions with {total_insights} insights generated"
+            "sessions": f"Processed {overview.usage.total_sessions} sessions with {total_insights} insights generated",
         }
 
         return PortfolioStats(
@@ -181,5 +168,5 @@ class AnalyticsAggregator:
             avg_satisfaction_rating=overview.satisfaction.avg_rating,
             accuracy_rate=overview.accuracy.accuracy_rate,
             total_insights_generated=total_insights,
-            headline_metrics=headline_metrics
+            headline_metrics=headline_metrics,
         )

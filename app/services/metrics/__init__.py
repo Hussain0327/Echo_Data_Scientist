@@ -1,7 +1,7 @@
 from app.services.metrics.base import (
-    MetricResult,
-    MetricDefinition,
     BaseMetric,
+    MetricDefinition,
+    MetricResult,
 )
 from app.services.metrics.engine import MetricsEngine
 from app.services.metrics.registry import create_metrics_engine

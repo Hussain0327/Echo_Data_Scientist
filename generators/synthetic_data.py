@@ -434,7 +434,9 @@ class SyntheticDataGenerator:
         # Use power law distribution for customer indices
         customer_ids = customers["customer_id"].values
         pareto_indices = self.rng.pareto(a=1.5, size=n) + 1
-        pareto_indices = (pareto_indices / pareto_indices.max() * (len(customer_ids) - 1)).astype(int)
+        pareto_indices = (pareto_indices / pareto_indices.max() * (len(customer_ids) - 1)).astype(
+            int
+        )
         pareto_indices = np.clip(pareto_indices, 0, len(customer_ids) - 1)
         selected_customers = customer_ids[pareto_indices]
 
@@ -646,15 +648,11 @@ class SyntheticDataGenerator:
                 exp_name = experiment_names[exp_idx % len(experiment_names)]
 
                 # Variant assignment (weighted toward control)
-                variant = self.rng.choice(
-                    self.VARIANTS, p=[0.5, 0.25, 0.15, 0.10]
-                )
+                variant = self.rng.choice(self.VARIANTS, p=[0.5, 0.25, 0.15, 0.10])
 
                 # Assignment date
                 date_range = (end_date - start_date).days
-                assigned_at = start_date + timedelta(
-                    days=int(self.rng.uniform(0, date_range))
-                )
+                assigned_at = start_date + timedelta(days=int(self.rng.uniform(0, date_range)))
 
                 # Conversion (varies by variant to simulate lift)
                 base_conversion_rate = 0.05
@@ -713,7 +711,9 @@ class SyntheticDataGenerator:
         if n_changes == 0:
             n_changes = 1
 
-        changed_channels = self.rng.choice(unique_channels, size=min(n_changes, len(unique_channels)), replace=False)
+        changed_channels = self.rng.choice(
+            unique_channels, size=min(n_changes, len(unique_channels)), replace=False
+        )
 
         history_records = []
         for channel in changed_channels:
@@ -767,9 +767,7 @@ class SyntheticDataGenerator:
         products = self.generate_products(config.products)
 
         # Generate transactional data
-        transactions = self.generate_transactions(
-            config.transactions, customers, products
-        )
+        transactions = self.generate_transactions(config.transactions, customers, products)
         marketing_events = self.generate_marketing_events(config.marketing_events)
         experiments = self.generate_experiments(config.experiments, customers)
 

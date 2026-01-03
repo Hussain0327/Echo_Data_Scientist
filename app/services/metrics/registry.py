@@ -1,33 +1,32 @@
 import pandas as pd
-from app.services.metrics.engine import MetricsEngine
 
-from app.services.metrics.revenue import (
-    TotalRevenue,
-    RevenueByPeriod,
-    RevenueGrowth,
-    MRR,
-    ARR,
-    AverageOrderValue,
-    RevenueByProduct,
-)
+from app.services.metrics.engine import MetricsEngine
 from app.services.metrics.financial import (
     CAC,
     LTV,
-    LTVCACRatio,
-    GrossMargin,
     BurnRate,
+    GrossMargin,
+    LTVCACRatio,
     Runway,
 )
 from app.services.metrics.marketing import (
-    ConversionRate,
-    ChannelPerformance,
-    CampaignPerformance,
-    CostPerLead,
     ROAS,
-    LeadVelocity,
+    CampaignPerformance,
+    ChannelPerformance,
+    ConversionRate,
+    CostPerLead,
     FunnelAnalysis,
+    LeadVelocity,
 )
-
+from app.services.metrics.revenue import (
+    ARR,
+    MRR,
+    AverageOrderValue,
+    RevenueByPeriod,
+    RevenueByProduct,
+    RevenueGrowth,
+    TotalRevenue,
+)
 
 ALL_METRICS = [
     TotalRevenue,
@@ -112,7 +111,7 @@ def create_marketing_engine(df: pd.DataFrame) -> MetricsEngine:
 
 def get_available_metrics() -> dict:
     return {
-        'revenue': [m.__name__ for m in REVENUE_METRICS],
-        'financial': [m.__name__ for m in FINANCIAL_METRICS],
-        'marketing': [m.__name__ for m in MARKETING_METRICS],
+        "revenue": [m.__name__ for m in REVENUE_METRICS],
+        "financial": [m.__name__ for m in FINANCIAL_METRICS],
+        "marketing": [m.__name__ for m in MARKETING_METRICS],
     }

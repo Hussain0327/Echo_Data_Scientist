@@ -1,4 +1,3 @@
-import pytest
 from io import BytesIO
 
 
@@ -30,16 +29,16 @@ def test_upload_csv_with_use_case(client):
     files = {"file": ("revenue.csv", BytesIO(csv_content), "text/csv")}
 
     response = client.post(
-        "/api/v1/ingestion/upload/csv",
-        files=files,
-        params={"use_case": "revenue"}
+        "/api/v1/ingestion/upload/csv", files=files, params={"use_case": "revenue"}
     )
 
     assert response.status_code == 200
 
 
 def test_upload_csv_schema_detection(client):
-    csv_content = b"date,amount,email\n2024-01-01,100.50,test@example.com\n2024-01-02,200.75,user@test.org"
+    csv_content = (
+        b"date,amount,email\n2024-01-01,100.50,test@example.com\n2024-01-02,200.75,user@test.org"
+    )
     files = {"file": ("test.csv", BytesIO(csv_content), "text/csv")}
 
     response = client.post("/api/v1/ingestion/upload/csv", files=files)

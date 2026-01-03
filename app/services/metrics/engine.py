@@ -1,10 +1,11 @@
-from typing import List, Dict, Type, Optional, Set
+from typing import Dict, List, Optional, Set, Type
+
 import pandas as pd
-from app.services.metrics.base import BaseMetric, MetricResult, MetricDefinition
+
+from app.services.metrics.base import BaseMetric, MetricDefinition, MetricResult
 
 
 class MetricsEngine:
-
     def __init__(self, df: pd.DataFrame):
         self.df = df
         self._registry: Dict[str, Type[BaseMetric]] = {}
@@ -62,15 +63,18 @@ class MetricsEngine:
         cols = self._data_columns
 
         # Check for revenue/financial data indicators
-        has_revenue_data = any(c in cols for c in ['amount', 'revenue', 'price', 'total', 'payment'])
-        has_status = 'status' in cols
+        has_revenue_data = any(
+            c in cols for c in ["amount", "revenue", "price", "total", "payment"]
+        )
 
         # Check for marketing data indicators
-        has_marketing_data = any(c in cols for c in ['leads', 'conversions', 'source', 'channel', 'campaign'])
-        has_spend = 'spend' in cols
+        has_marketing_data = any(
+            c in cols for c in ["leads", "conversions", "source", "channel", "campaign"]
+        )
+        has_spend = "spend" in cols
 
         # Check for customer data
-        has_customer_data = any(c in cols for c in ['customer_id', 'user_id', 'customer', 'user'])
+        has_customer_data = any(c in cols for c in ["customer_id", "user_id", "customer", "user"])
 
         # Determine primary data type
         if has_revenue_data:
@@ -94,7 +98,7 @@ class MetricsEngine:
             "has_spend_data": has_spend,
             "applicable_metrics": applicable_metrics,
             "applicable_count": len(applicable_metrics),
-            "columns_detected": list(cols)
+            "columns_detected": list(cols),
         }
 
     def list_metrics(self, category: Optional[str] = None) -> List[MetricDefinition]:

@@ -1,18 +1,16 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-import pandas as pd
 import io
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
-from sqlalchemy.orm import Session
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from app.services.reports.generator import get_report_generator, GeneratedReport
-from app.services.reports.templates import list_templates, get_template
-from app.models.report import Report, ReportType, ReportStatus
+import pandas as pd
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from pydantic import BaseModel
+from sqlalchemy import desc, select
+
 from app.core.database import get_db
-
+from app.models.report import Report, ReportStatus, ReportType
+from app.services.reports.generator import get_report_generator
+from app.services.reports.templates import get_template, list_templates
 
 router = APIRouter()
 
@@ -78,10 +76,7 @@ async def generate_report(
         contents = await file.read()
         df = pd.read_csv(io.BytesIO(contents))
     except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Failed to read CSV file: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"Failed to read CSV file: {str(e)}")
 
     if df.empty:
         raise HTTPException(status_code=400, detail="CSV file is empty")
@@ -89,18 +84,11 @@ async def generate_report(
     generator = get_report_generator()
 
     try:
-        report = await generator.generate(
-            df=df,
-            template_type=template_type,
-            user_id=user_id
-        )
+        report = await generator.generate(df=df, template_type=template_type, user_id=user_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Report generation failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 
     db_report = Report(
         id=report.report_id,
@@ -159,9 +147,7 @@ async def list_reports(
 @router.get("/{report_id}", response_model=ReportResponse)
 async def get_report(report_id: str):
     async for session in get_db():
-        result = await session.execute(
-            select(Report).where(Report.id == report_id)
-        )
+        result = await session.execute(select(Report).where(Report.id == report_id))
         report = result.scalar_one_or_none()
 
         if not report:
@@ -181,9 +167,7 @@ async def get_report(report_id: str):
 @router.delete("/{report_id}")
 async def delete_report(report_id: str):
     async for session in get_db():
-        result = await session.execute(
-            select(Report).where(Report.id == report_id)
-        )
+        result = await session.execute(select(Report).where(Report.id == report_id))
         report = result.scalar_one_or_none()
 
         if not report:

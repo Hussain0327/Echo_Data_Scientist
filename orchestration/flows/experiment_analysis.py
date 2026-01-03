@@ -1,18 +1,20 @@
-import os
 from datetime import datetime
-from typing import Optional
-from prefect import flow, task, get_run_logger
+
+from prefect import flow, get_run_logger, task
 
 from orchestration.tasks.extract import extract_csv
 from orchestration.tasks.validate import run_expectations
-
 
 EXPERIMENT_EXPECTATIONS = [
     {"expectation_type": "expect_column_to_exist", "column": "user_id"},
     {"expectation_type": "expect_column_to_exist", "column": "variant"},
     {"expectation_type": "expect_column_values_to_not_be_null", "column": "user_id"},
     {"expectation_type": "expect_column_values_to_not_be_null", "column": "variant"},
-    {"expectation_type": "expect_column_values_to_be_in_set", "column": "variant", "value_set": ["control", "variant_a", "variant_b", "variant_c", "treatment"]},
+    {
+        "expectation_type": "expect_column_values_to_be_in_set",
+        "column": "variant",
+        "value_set": ["control", "variant_a", "variant_b", "variant_c", "treatment"],
+    },
 ]
 
 
@@ -31,14 +33,16 @@ def aggregate_variant_results(df, variant_col: str, conversion_col: str):
             "conversions": int(conversions),
             "conversion_rate": conversions / users if users > 0 else 0,
         }
-        logger.info(f"{variant}: {users} users, {conversions} conversions, {results[variant]['conversion_rate']:.2%}")
+        logger.info(
+            f"{variant}: {users} users, {conversions} conversions, {results[variant]['conversion_rate']:.2%}"
+        )
 
     return results
 
 
 @task
 def run_statistical_analysis(variant_results: dict, control_name: str = "control"):
-    from app.services.experiments.stats import analyze_experiment, VariantData
+    from app.services.experiments.stats import VariantData, analyze_experiment
 
     control_data = variant_results.get(control_name)
     if not control_data:
@@ -85,9 +89,7 @@ def run_statistical_analysis(variant_results: dict, control_name: str = "control
 
 @task
 def generate_experiment_report(
-    experiment_name: str,
-    variant_results: dict,
-    statistical_results: dict
+    experiment_name: str, variant_results: dict, statistical_results: dict
 ) -> dict:
     report = {
         "experiment_name": experiment_name,
@@ -100,11 +102,17 @@ def generate_experiment_report(
     for variant_name, stats in statistical_results.items():
         if stats["is_significant"]:
             if stats["relative_lift"] > 0:
-                report["summary"][variant_name] = f"Winner: +{stats['relative_lift']:.1f}% lift (p={stats['p_value']:.4f})"
+                report["summary"][
+                    variant_name
+                ] = f"Winner: +{stats['relative_lift']:.1f}% lift (p={stats['p_value']:.4f})"
             else:
-                report["summary"][variant_name] = f"Loser: {stats['relative_lift']:.1f}% lift (p={stats['p_value']:.4f})"
+                report["summary"][
+                    variant_name
+                ] = f"Loser: {stats['relative_lift']:.1f}% lift (p={stats['p_value']:.4f})"
         else:
-            report["summary"][variant_name] = f"Inconclusive: {stats['relative_lift']:+.1f}% lift (p={stats['p_value']:.4f})"
+            report["summary"][
+                variant_name
+            ] = f"Inconclusive: {stats['relative_lift']:+.1f}% lift (p={stats['p_value']:.4f})"
 
     return report
 
@@ -116,7 +124,7 @@ def experiment_analysis_pipeline(
     variant_column: str = "variant",
     conversion_column: str = "converted",
     control_name: str = "control",
-    validate_data: bool = True
+    validate_data: bool = True,
 ):
     logger = get_run_logger()
     logger.info(f"Starting experiment analysis: {experiment_name}")

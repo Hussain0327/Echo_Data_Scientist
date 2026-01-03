@@ -1,13 +1,13 @@
 import os
 from datetime import datetime, timezone
 from typing import Optional
+
 from prefect import flow, get_run_logger
 
-from orchestration.tasks.extract import extract_csv, extract_from_directory
-from orchestration.tasks.validate import validate_data, run_expectations
-from orchestration.tasks.transform import run_dbt, calculate_metrics
+from orchestration.tasks.extract import extract_csv
 from orchestration.tasks.load import load_to_staging
-
+from orchestration.tasks.transform import calculate_metrics, run_dbt
+from orchestration.tasks.validate import run_expectations
 
 REVENUE_EXPECTATIONS = [
     {"expectation_type": "expect_column_to_exist", "column": "amount"},
@@ -29,7 +29,7 @@ def daily_metrics_pipeline(
     revenue_file: Optional[str] = None,
     marketing_file: Optional[str] = None,
     run_dbt_models: bool = True,
-    connection_string: Optional[str] = None
+    connection_string: Optional[str] = None,
 ):
     logger = get_run_logger()
     logger.info(f"Starting daily metrics pipeline at {datetime.now(timezone.utc).isoformat()}")
@@ -60,11 +60,14 @@ def process_revenue_data(file_path: str, connection_string: Optional[str] = None
     if not validation["success"]:
         logger.warning(f"Validation failed: {validation['failed_count']} expectations failed")
 
-    metrics = calculate_metrics(df, metrics=[
-        "total_revenue",
-        "revenue_growth",
-        "average_order_value",
-    ])
+    metrics = calculate_metrics(
+        df,
+        metrics=[
+            "total_revenue",
+            "revenue_growth",
+            "average_order_value",
+        ],
+    )
 
     if connection_string:
         load_to_staging(df, "revenue", connection_string)
@@ -86,10 +89,13 @@ def process_marketing_data(file_path: str, connection_string: Optional[str] = No
     if not validation["success"]:
         logger.warning(f"Validation failed: {validation['failed_count']} expectations failed")
 
-    metrics = calculate_metrics(df, metrics=[
-        "conversion_rate",
-        "channel_performance",
-    ])
+    metrics = calculate_metrics(
+        df,
+        metrics=[
+            "conversion_rate",
+            "channel_performance",
+        ],
+    )
 
     if connection_string:
         load_to_staging(df, "marketing", connection_string)

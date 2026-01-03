@@ -1,13 +1,13 @@
-import pytest
-
-
 def test_submit_feedback(client):
-    response = client.post("/api/v1/feedback", json={
-        "interaction_type": "report",
-        "rating": 5,
-        "feedback_text": "Great report!",
-        "accuracy_rating": "correct"
-    })
+    response = client.post(
+        "/api/v1/feedback",
+        json={
+            "interaction_type": "report",
+            "rating": 5,
+            "feedback_text": "Great report!",
+            "accuracy_rating": "correct",
+        },
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -18,9 +18,7 @@ def test_submit_feedback(client):
 
 
 def test_submit_feedback_minimal(client):
-    response = client.post("/api/v1/feedback", json={
-        "interaction_type": "chat"
-    })
+    response = client.post("/api/v1/feedback", json={"interaction_type": "chat"})
 
     assert response.status_code == 200
     data = response.json()
@@ -30,26 +28,26 @@ def test_submit_feedback_minimal(client):
 
 
 def test_submit_feedback_invalid_rating(client):
-    response = client.post("/api/v1/feedback", json={
-        "interaction_type": "metric",
-        "rating": 6
-    })
+    response = client.post("/api/v1/feedback", json={"interaction_type": "metric", "rating": 6})
 
     assert response.status_code == 422
 
 
 def test_submit_feedback_with_session(client):
-    start_response = client.post("/api/v1/analytics/session/start", json={
-        "task_type": "report_generation"
-    })
+    start_response = client.post(
+        "/api/v1/analytics/session/start", json={"task_type": "report_generation"}
+    )
     session_id = start_response.json()["id"]
 
-    response = client.post("/api/v1/feedback", json={
-        "interaction_type": "report",
-        "session_id": session_id,
-        "rating": 4,
-        "feedback_text": "Good but could be better"
-    })
+    response = client.post(
+        "/api/v1/feedback",
+        json={
+            "interaction_type": "report",
+            "session_id": session_id,
+            "rating": 4,
+            "feedback_text": "Good but could be better",
+        },
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -57,10 +55,9 @@ def test_submit_feedback_with_session(client):
 
 
 def test_get_feedback(client):
-    submit_response = client.post("/api/v1/feedback", json={
-        "interaction_type": "chat",
-        "rating": 3
-    })
+    submit_response = client.post(
+        "/api/v1/feedback", json={"interaction_type": "chat", "rating": 3}
+    )
     feedback_id = submit_response.json()["id"]
 
     get_response = client.get(f"/api/v1/feedback/{feedback_id}")
@@ -77,14 +74,8 @@ def test_get_feedback_not_found(client):
 
 
 def test_list_feedback(client):
-    client.post("/api/v1/feedback", json={
-        "interaction_type": "report",
-        "rating": 5
-    })
-    client.post("/api/v1/feedback", json={
-        "interaction_type": "chat",
-        "rating": 4
-    })
+    client.post("/api/v1/feedback", json={"interaction_type": "report", "rating": 5})
+    client.post("/api/v1/feedback", json={"interaction_type": "chat", "rating": 4})
 
     response = client.get("/api/v1/feedback")
 
@@ -95,11 +86,14 @@ def test_list_feedback(client):
 
 
 def test_submit_feedback_with_accuracy_notes(client):
-    response = client.post("/api/v1/feedback", json={
-        "interaction_type": "metric",
-        "accuracy_rating": "partially_correct",
-        "accuracy_notes": "The calculation was mostly right but missed one edge case"
-    })
+    response = client.post(
+        "/api/v1/feedback",
+        json={
+            "interaction_type": "metric",
+            "accuracy_rating": "partially_correct",
+            "accuracy_notes": "The calculation was mostly right but missed one edge case",
+        },
+    )
 
     assert response.status_code == 200
     data = response.json()

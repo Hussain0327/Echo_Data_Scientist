@@ -1,20 +1,18 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-import pandas as pd
 import io
 import uuid
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
+import pandas as pd
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from pydantic import BaseModel
+
+from app.services.data_autofixer import auto_fix_dataframe
+from app.services.llm.context_builder import DataContextBuilder
 from app.services.llm.conversation import (
     get_conversation_service,
-    ChatResponse,
-    Message,
 )
-from app.services.llm.context_builder import DataContextBuilder
 from app.services.metrics.registry import create_metrics_engine
-from app.services.data_autofixer import auto_fix_dataframe
-
 
 router = APIRouter()
 
@@ -52,21 +50,13 @@ async def chat(request: ChatRequest):
     session_id = request.session_id or str(uuid.uuid4())
 
     try:
-        response = await service.chat(
-            session_id=session_id,
-            user_message=request.message
-        )
+        response = await service.chat(session_id=session_id, user_message=request.message)
 
         return ChatMessageResponse(
-            response=response.message,
-            session_id=session_id,
-            timestamp=response.timestamp
+            response=response.message, session_id=session_id, timestamp=response.timestamp
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Chat service error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Chat service error: {str(e)}")
 
 
 @router.post("/with-data", response_model=ChatMessageResponse)
@@ -76,11 +66,11 @@ async def chat_with_data(
     file: UploadFile = File(..., description="CSV file with your data"),
     calculate_metrics: bool = Query(True, description="Auto-calculate metrics"),
 ):
-    if not file.filename.endswith('.csv'):
+    if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="File must be CSV")
 
     content = await file.read()
-    if not content or content.strip() == b'':
+    if not content or content.strip() == b"":
         raise HTTPException(status_code=400, detail="File is empty")
 
     try:
@@ -100,8 +90,7 @@ async def chat_with_data(
 
     # Build data context (using cleaned data)
     data_summary, metrics_summary = DataContextBuilder.build_full_context(
-        df=df,
-        source_name=file.filename
+        df=df, source_name=file.filename
     )
 
     # Add note about auto-fixes if any were applied
@@ -125,19 +114,14 @@ async def chat_with_data(
             session_id=session_id,
             user_message=message,
             data_summary=data_summary,
-            metrics_summary=metrics_summary
+            metrics_summary=metrics_summary,
         )
 
         return ChatMessageResponse(
-            response=response.message,
-            session_id=session_id,
-            timestamp=response.timestamp
+            response=response.message, session_id=session_id, timestamp=response.timestamp
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Chat service error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Chat service error: {str(e)}")
 
 
 @router.post("/load-data", response_model=DataLoadResponse)
@@ -146,11 +130,11 @@ async def load_data_to_session(
     file: UploadFile = File(..., description="CSV file with your data"),
     calculate_metrics: bool = Query(True, description="Auto-calculate metrics"),
 ):
-    if not file.filename.endswith('.csv'):
+    if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="File must be CSV")
 
     content = await file.read()
-    if not content or content.strip() == b'':
+    if not content or content.strip() == b"":
         raise HTTPException(status_code=400, detail="File is empty")
 
     try:
@@ -168,10 +152,7 @@ async def load_data_to_session(
     service = get_conversation_service()
 
     # Build data context (using cleaned data)
-    data_summary, _ = DataContextBuilder.build_full_context(
-        df=df,
-        source_name=file.filename
-    )
+    data_summary, _ = DataContextBuilder.build_full_context(df=df, source_name=file.filename)
 
     # Add note about auto-fixes if any were applied
     if fix_result.was_modified:
@@ -194,9 +175,7 @@ async def load_data_to_session(
 
     # Update session context
     service.update_data_context(
-        session_id=session_id,
-        data_summary=data_summary,
-        metrics_summary=metrics_summary
+        session_id=session_id, data_summary=data_summary, metrics_summary=metrics_summary
     )
 
     return DataLoadResponse(
@@ -204,7 +183,7 @@ async def load_data_to_session(
         message=f"Data loaded successfully. Echo now has context about your {file.filename}.",
         rows=len(df),
         columns=list(df.columns),
-        metrics_calculated=metrics_calculated
+        metrics_calculated=metrics_calculated,
     )
 
 
@@ -220,15 +199,13 @@ async def get_history(session_id: str):
         {
             "role": msg.role,
             "content": msg.content,
-            "timestamp": msg.timestamp.isoformat() if msg.timestamp else None
+            "timestamp": msg.timestamp.isoformat() if msg.timestamp else None,
         }
         for msg in session.messages
     ]
 
     return SessionHistoryResponse(
-        session_id=session_id,
-        messages=messages,
-        data_loaded=bool(session.data_summary)
+        session_id=session_id, messages=messages, data_loaded=bool(session.data_summary)
     )
 
 
@@ -248,11 +225,13 @@ async def list_sessions():
 
     sessions = []
     for session_id, session in service._sessions.items():
-        sessions.append({
-            "session_id": session_id,
-            "message_count": len(session.messages),
-            "has_data": bool(session.data_summary),
-            "has_metrics": bool(session.metrics_summary)
-        })
+        sessions.append(
+            {
+                "session_id": session_id,
+                "message_count": len(session.messages),
+                "has_data": bool(session.data_summary),
+                "has_metrics": bool(session.metrics_summary),
+            }
+        )
 
     return {"sessions": sessions, "total": len(sessions)}

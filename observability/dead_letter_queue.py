@@ -132,9 +132,7 @@ class DeadLetterQueue:
         """
         self.redis = redis_client
         self.queue_prefix = queue_prefix
-        self.default_max_retries = int(
-            os.getenv("DLQ_MAX_RETRIES", default_max_retries)
-        )
+        self.default_max_retries = int(os.getenv("DLQ_MAX_RETRIES", default_max_retries))
         self.logger = structlog.get_logger("dlq")
 
     def _queue_name(self, source_table: str, suffix: str = "") -> str:
@@ -335,7 +333,9 @@ class DeadLetterQueue:
                 if oldest:
                     oldest_str = oldest.decode() if isinstance(oldest, bytes) else oldest
                     oldest_record = FailedRecord.from_json(oldest_str)
-                    oldest_age = (datetime.utcnow() - oldest_record.failed_at).total_seconds() / 3600
+                    oldest_age = (
+                        datetime.utcnow() - oldest_record.failed_at
+                    ).total_seconds() / 3600
 
                 # Get age of newest record
                 newest_age = None
@@ -343,7 +343,9 @@ class DeadLetterQueue:
                 if newest:
                     newest_str = newest.decode() if isinstance(newest, bytes) else newest
                     newest_record = FailedRecord.from_json(newest_str)
-                    newest_age = (datetime.utcnow() - newest_record.failed_at).total_seconds() / 3600
+                    newest_age = (
+                        datetime.utcnow() - newest_record.failed_at
+                    ).total_seconds() / 3600
 
                 stats[table] = DLQStats(
                     source_table=table,

@@ -1,11 +1,12 @@
+from typing import List
+
 import pandas as pd
-from typing import List, Optional, Dict, Any
-from app.services.metrics.base import BaseMetric, MetricResult, MetricDefinition
+
+from app.services.metrics.base import BaseMetric, MetricDefinition, MetricResult
 
 
 class ConversionRate(BaseMetric):
-
-    CONVERTED_STATUSES = ['converted', 'customer', 'won', 'closed', 'success', 'completed']
+    CONVERTED_STATUSES = ["converted", "customer", "won", "closed", "success", "completed"]
 
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
@@ -15,12 +16,12 @@ class ConversionRate(BaseMetric):
             category="marketing",
             unit="%",
             formula="(Conversions / Total Leads) * 100",
-            required_columns=["leads", "conversions"]
+            required_columns=["leads", "conversions"],
         )
 
     def calculate(self, **kwargs) -> MetricResult:
-        total_leads = self.df['leads'].sum()
-        total_conversions = self.df['conversions'].sum()
+        total_leads = self.df["leads"].sum()
+        total_conversions = self.df["conversions"].sum()
 
         if total_leads == 0:
             rate = 0.0
@@ -28,14 +29,11 @@ class ConversionRate(BaseMetric):
             rate = (total_conversions / total_leads) * 100
 
         return self._format_result(
-            value=rate,
-            total_leads=int(total_leads),
-            total_conversions=int(total_conversions)
+            value=rate, total_leads=int(total_leads), total_conversions=int(total_conversions)
         )
 
 
 class ChannelPerformance(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="channel_performance",
@@ -44,50 +42,49 @@ class ChannelPerformance(BaseMetric):
             category="marketing",
             unit="$",
             formula="Metrics grouped by source/channel",
-            required_columns=["source"]
+            required_columns=["source"],
         )
 
     def calculate(self, **kwargs) -> MetricResult:
         df = self.df.copy()
 
-        agg_dict = {'source': 'count'}
+        agg_dict = {"source": "count"}
 
-        if 'leads' in df.columns:
-            agg_dict['leads'] = 'sum'
-        if 'conversions' in df.columns:
-            agg_dict['conversions'] = 'sum'
-        if 'spend' in df.columns:
-            agg_dict['spend'] = 'sum'
+        if "leads" in df.columns:
+            agg_dict["leads"] = "sum"
+        if "conversions" in df.columns:
+            agg_dict["conversions"] = "sum"
+        if "spend" in df.columns:
+            agg_dict["spend"] = "sum"
 
-        channel_stats = df.groupby('source').agg(agg_dict)
-        channel_stats = channel_stats.rename(columns={'source': 'records'})
+        channel_stats = df.groupby("source").agg(agg_dict)
+        channel_stats = channel_stats.rename(columns={"source": "records"})
 
-        if 'leads' in channel_stats.columns and 'conversions' in channel_stats.columns:
-            channel_stats['conversion_rate'] = (
-                channel_stats['conversions'] / channel_stats['leads'] * 100
+        if "leads" in channel_stats.columns and "conversions" in channel_stats.columns:
+            channel_stats["conversion_rate"] = (
+                channel_stats["conversions"] / channel_stats["leads"] * 100
             ).round(2)
 
-        if 'spend' in channel_stats.columns and 'conversions' in channel_stats.columns:
-            channel_stats['cost_per_conversion'] = (
-                channel_stats['spend'] / channel_stats['conversions'].replace(0, 1)
+        if "spend" in channel_stats.columns and "conversions" in channel_stats.columns:
+            channel_stats["cost_per_conversion"] = (
+                channel_stats["spend"] / channel_stats["conversions"].replace(0, 1)
             ).round(2)
 
-        sort_col = 'conversions' if 'conversions' in channel_stats.columns else 'records'
+        sort_col = "conversions" if "conversions" in channel_stats.columns else "records"
         channel_stats = channel_stats.sort_values(sort_col, ascending=False)
 
         top_channel = channel_stats.index[0] if len(channel_stats) > 0 else None
-        total_spend = float(channel_stats['spend'].sum()) if 'spend' in channel_stats.columns else 0
+        total_spend = float(channel_stats["spend"].sum()) if "spend" in channel_stats.columns else 0
 
         return self._format_result(
             value=total_spend,
-            channels=channel_stats.to_dict('index'),
+            channels=channel_stats.to_dict("index"),
             channel_count=len(channel_stats),
-            top_channel=top_channel
+            top_channel=top_channel,
         )
 
 
 class CampaignPerformance(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="campaign_performance",
@@ -96,55 +93,58 @@ class CampaignPerformance(BaseMetric):
             category="marketing",
             unit="$",
             formula="Metrics grouped by campaign",
-            required_columns=["campaign"]
+            required_columns=["campaign"],
         )
 
     def calculate(self, **kwargs) -> MetricResult:
         df = self.df.copy()
 
         agg_dict = {}
-        if 'leads' in df.columns:
-            agg_dict['leads'] = 'sum'
-        if 'conversions' in df.columns:
-            agg_dict['conversions'] = 'sum'
-        if 'spend' in df.columns:
-            agg_dict['spend'] = 'sum'
+        if "leads" in df.columns:
+            agg_dict["leads"] = "sum"
+        if "conversions" in df.columns:
+            agg_dict["conversions"] = "sum"
+        if "spend" in df.columns:
+            agg_dict["spend"] = "sum"
 
         if not agg_dict:
-            agg_dict['campaign'] = 'count'
+            agg_dict["campaign"] = "count"
 
-        campaign_stats = df.groupby('campaign').agg(agg_dict)
+        campaign_stats = df.groupby("campaign").agg(agg_dict)
 
-        if 'campaign' in campaign_stats.columns:
-            campaign_stats = campaign_stats.rename(columns={'campaign': 'records'})
+        if "campaign" in campaign_stats.columns:
+            campaign_stats = campaign_stats.rename(columns={"campaign": "records"})
 
-        if 'leads' in campaign_stats.columns and 'conversions' in campaign_stats.columns:
-            campaign_stats['conversion_rate'] = (
-                campaign_stats['conversions'] / campaign_stats['leads'] * 100
+        if "leads" in campaign_stats.columns and "conversions" in campaign_stats.columns:
+            campaign_stats["conversion_rate"] = (
+                campaign_stats["conversions"] / campaign_stats["leads"] * 100
             ).round(2)
 
-        if 'spend' in campaign_stats.columns and 'conversions' in campaign_stats.columns:
-            campaign_stats['cpa'] = (
-                campaign_stats['spend'] / campaign_stats['conversions'].replace(0, 1)
+        if "spend" in campaign_stats.columns and "conversions" in campaign_stats.columns:
+            campaign_stats["cpa"] = (
+                campaign_stats["spend"] / campaign_stats["conversions"].replace(0, 1)
             ).round(2)
 
-        sort_col = 'conversions' if 'conversions' in campaign_stats.columns else 'leads'
+        sort_col = "conversions" if "conversions" in campaign_stats.columns else "leads"
         if sort_col in campaign_stats.columns:
             campaign_stats = campaign_stats.sort_values(sort_col, ascending=False)
 
         top_campaign = campaign_stats.index[0] if len(campaign_stats) > 0 else None
-        total_conversions = int(campaign_stats['conversions'].sum()) if 'conversions' in campaign_stats.columns else 0
+        total_conversions = (
+            int(campaign_stats["conversions"].sum())
+            if "conversions" in campaign_stats.columns
+            else 0
+        )
 
         return self._format_result(
             value=float(total_conversions),
-            campaigns=campaign_stats.to_dict('index'),
+            campaigns=campaign_stats.to_dict("index"),
             campaign_count=len(campaign_stats),
-            top_campaign=top_campaign
+            top_campaign=top_campaign,
         )
 
 
 class CostPerLead(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="cost_per_lead",
@@ -153,12 +153,12 @@ class CostPerLead(BaseMetric):
             category="marketing",
             unit="$",
             formula="Total Spend / Total Leads",
-            required_columns=["spend", "leads"]
+            required_columns=["spend", "leads"],
         )
 
     def calculate(self, **kwargs) -> MetricResult:
-        total_spend = self.df['spend'].sum()
-        total_leads = self.df['leads'].sum()
+        total_spend = self.df["spend"].sum()
+        total_leads = self.df["leads"].sum()
 
         if total_leads == 0:
             cpl = 0.0
@@ -166,14 +166,11 @@ class CostPerLead(BaseMetric):
             cpl = total_spend / total_leads
 
         return self._format_result(
-            value=float(cpl),
-            total_spend=round(float(total_spend), 2),
-            total_leads=int(total_leads)
+            value=float(cpl), total_spend=round(float(total_spend), 2), total_leads=int(total_leads)
         )
 
 
 class ROAS(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="roas",
@@ -182,12 +179,12 @@ class ROAS(BaseMetric):
             category="marketing",
             unit="ratio",
             formula="Revenue / Ad Spend",
-            required_columns=["spend", "revenue"]
+            required_columns=["spend", "revenue"],
         )
 
     def calculate(self, **kwargs) -> MetricResult:
-        total_spend = self.df['spend'].sum()
-        total_revenue = self.df['revenue'].sum()
+        total_spend = self.df["spend"].sum()
+        total_revenue = self.df["revenue"].sum()
 
         if total_spend == 0:
             roas = 0.0
@@ -207,12 +204,11 @@ class ROAS(BaseMetric):
             value=roas,
             total_revenue=round(float(total_revenue), 2),
             total_spend=round(float(total_spend), 2),
-            status=status
+            status=status,
         )
 
 
 class LeadVelocity(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="lead_velocity",
@@ -221,21 +217,21 @@ class LeadVelocity(BaseMetric):
             category="marketing",
             unit="%",
             formula="((Current Month Leads - Previous Month Leads) / Previous Month) * 100",
-            required_columns=["leads", "date"]
+            required_columns=["leads", "date"],
         )
 
     def calculate(self, **kwargs) -> MetricResult:
         df = self.df.copy()
-        df['date'] = pd.to_datetime(df['date'])
-        df['month'] = df['date'].dt.to_period('M')
+        df["date"] = pd.to_datetime(df["date"])
+        df["month"] = df["date"].dt.to_period("M")
 
-        monthly_leads = df.groupby('month')['leads'].sum().sort_index()
+        monthly_leads = df.groupby("month")["leads"].sum().sort_index()
 
         if len(monthly_leads) < 2:
             return self._format_result(
                 value=0.0,
                 message="Need at least 2 months of data",
-                months_available=len(monthly_leads)
+                months_available=len(monthly_leads),
             )
 
         current = float(monthly_leads.iloc[-1])
@@ -251,12 +247,11 @@ class LeadVelocity(BaseMetric):
             current_month=str(monthly_leads.index[-1]),
             previous_month=str(monthly_leads.index[-2]),
             current_leads=int(current),
-            previous_leads=int(previous)
+            previous_leads=int(previous),
         )
 
 
 class FunnelAnalysis(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="funnel_analysis",
@@ -265,19 +260,15 @@ class FunnelAnalysis(BaseMetric):
             category="marketing",
             unit="%",
             formula="Count and conversion at each stage",
-            required_columns=["stage"]
+            required_columns=["stage"],
         )
 
-    def calculate(
-        self,
-        stages: List[str] = None,
-        **kwargs
-    ) -> MetricResult:
+    def calculate(self, stages: List[str] = None, **kwargs) -> MetricResult:
         if stages is None:
-            stages = ['lead', 'qualified', 'opportunity', 'proposal', 'customer']
+            stages = ["lead", "qualified", "opportunity", "proposal", "customer"]
 
         stage_counts = {}
-        df_stages = self.df['stage'].str.lower()
+        df_stages = self.df["stage"].str.lower()
 
         for stage in stages:
             count = (df_stages == stage.lower()).sum()
@@ -310,5 +301,5 @@ class FunnelAnalysis(BaseMetric):
             stage_counts=stage_counts,
             stage_conversions=conversions,
             total_entered=first_stage,
-            total_converted=last_stage
+            total_converted=last_stage,
         )

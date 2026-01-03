@@ -28,9 +28,8 @@ Usage:
     alert_manager.emit(alert)
 """
 
-import json
 import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Optional
@@ -170,12 +169,8 @@ class AlertManager:
             persist_to_db: Whether to persist alerts to database
             db_connection: Database connection for persistence
         """
-        self.throttle_minutes = int(
-            os.getenv("ALERT_THROTTLE_MINUTES", throttle_minutes)
-        )
-        self.persist_to_db = (
-            os.getenv("ALERT_PERSIST_TO_DB", str(persist_to_db)).lower() == "true"
-        )
+        self.throttle_minutes = int(os.getenv("ALERT_THROTTLE_MINUTES", throttle_minutes))
+        self.persist_to_db = os.getenv("ALERT_PERSIST_TO_DB", str(persist_to_db)).lower() == "true"
         self.db_connection = db_connection
 
         # Track recent alerts for throttling
@@ -198,9 +193,7 @@ class AlertManager:
 
         # Clean old entries (older than 1 hour)
         cutoff = datetime.utcnow() - timedelta(hours=1)
-        self._recent_alerts = {
-            k: v for k, v in self._recent_alerts.items() if v > cutoff
-        }
+        self._recent_alerts = {k: v for k, v in self._recent_alerts.items() if v > cutoff}
 
     def emit(self, alert: Alert, force: bool = False) -> bool:
         """

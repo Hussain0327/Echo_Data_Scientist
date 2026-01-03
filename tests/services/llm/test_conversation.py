@@ -1,14 +1,15 @@
 """Tests for the ConversationService."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from app.services.llm.conversation import (
+    ChatResponse,
+    ConversationContext,
     ConversationService,
     Message,
-    ConversationContext,
-    ChatResponse,
     get_conversation_service,
 )
 
@@ -44,9 +45,7 @@ class TestConversationContext:
     def test_context_with_data(self):
         """Test context with data summary."""
         ctx = ConversationContext(
-            session_id="test-456",
-            data_summary="Test data summary",
-            metrics_summary="Test metrics"
+            session_id="test-456", data_summary="Test data summary", metrics_summary="Test metrics"
         )
         assert ctx.data_summary == "Test data summary"
         assert ctx.metrics_summary == "Test metrics"
@@ -58,7 +57,7 @@ class TestConversationService:
     @pytest.fixture
     def mock_settings(self):
         """Mock settings for testing."""
-        with patch('app.services.llm.conversation.get_settings') as mock:
+        with patch("app.services.llm.conversation.get_settings") as mock:
             settings = MagicMock()
             settings.DEEPSEEK_API_KEY = ""
             settings.OPENAI_API_KEY = "test-key"
@@ -70,7 +69,7 @@ class TestConversationService:
     @pytest.fixture
     def service(self, mock_settings):
         """Create a ConversationService for testing."""
-        with patch('app.services.llm.conversation.AsyncOpenAI'):
+        with patch("app.services.llm.conversation.AsyncOpenAI"):
             return ConversationService()
 
     def test_get_or_create_session_new(self, service):
@@ -84,9 +83,7 @@ class TestConversationService:
         # Create session
         service.get_or_create_session("existing-session")
         # Add a message
-        service._sessions["existing-session"].messages.append(
-            Message(role="user", content="test")
-        )
+        service._sessions["existing-session"].messages.append(Message(role="user", content="test"))
 
         # Get same session
         session = service.get_or_create_session("existing-session")
@@ -97,7 +94,7 @@ class TestConversationService:
         service.update_data_context(
             session_id="ctx-session",
             data_summary="Data summary here",
-            metrics_summary="Metrics summary here"
+            metrics_summary="Metrics summary here",
         )
 
         session = service._sessions["ctx-session"]
@@ -106,14 +103,8 @@ class TestConversationService:
 
     def test_update_data_context_partial(self, service):
         """Test partial context update."""
-        service.update_data_context(
-            session_id="partial-session",
-            data_summary="Initial data"
-        )
-        service.update_data_context(
-            session_id="partial-session",
-            metrics_summary="Added metrics"
-        )
+        service.update_data_context(session_id="partial-session", data_summary="Initial data")
+        service.update_data_context(session_id="partial-session", metrics_summary="Added metrics")
 
         session = service._sessions["partial-session"]
         assert session.data_summary == "Initial data"
@@ -140,10 +131,7 @@ class TestConversationService:
 
     def test_format_conversation_history_truncation(self, service):
         """Test that history is truncated to max messages."""
-        messages = [
-            Message(role="user", content=f"Message {i}")
-            for i in range(20)
-        ]
+        messages = [Message(role="user", content=f"Message {i}") for i in range(20)]
 
         result = service._format_conversation_history(messages, max_messages=5)
         lines = result.split("\n")
@@ -187,10 +175,7 @@ class TestConversationService:
 
         service.client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        response = await service.chat(
-            session_id="chat-test",
-            user_message="Hi!"
-        )
+        response = await service.chat(session_id="chat-test", user_message="Hi!")
 
         assert isinstance(response, ChatResponse)
         assert response.message == "Hello! I'm Echo, your data consultant."
@@ -217,7 +202,7 @@ class TestConversationService:
             session_id="context-chat",
             user_message="What's my revenue?",
             data_summary="Revenue data loaded",
-            metrics_summary="Total Revenue: $50,000"
+            metrics_summary="Total Revenue: $50,000",
         )
 
         assert response.message == "Your revenue is $50,000."
@@ -235,9 +220,10 @@ class TestGetConversationService:
         """Test that get_conversation_service returns singleton."""
         # Reset the singleton
         import app.services.llm.conversation as conv_module
+
         conv_module._conversation_service = None
 
-        with patch('app.services.llm.conversation.get_settings') as mock_settings:
+        with patch("app.services.llm.conversation.get_settings") as mock_settings:
             settings = MagicMock()
             settings.DEEPSEEK_API_KEY = ""
             settings.OPENAI_API_KEY = "test-key"
@@ -245,7 +231,7 @@ class TestGetConversationService:
             settings.DEEPSEEK_MODEL = "gpt-4"
             mock_settings.return_value = settings
 
-            with patch('app.services.llm.conversation.AsyncOpenAI'):
+            with patch("app.services.llm.conversation.AsyncOpenAI"):
                 service1 = get_conversation_service()
                 service2 = get_conversation_service()
 

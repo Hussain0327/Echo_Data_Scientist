@@ -1,14 +1,17 @@
+import enum
 
-from sqlalchemy import Column, String, DateTime, JSON, Integer, Float, ForeignKey, Text
+from sqlalchemy import JSON, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from app.core.database import Base
-import enum
-from sqlalchemy import Enum as SQLEnum
 
 
 class ExperimentStatus(str, enum.Enum):
     """Status of an experiment lifecycle."""
+
     DRAFT = "draft"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -17,6 +20,7 @@ class ExperimentStatus(str, enum.Enum):
 
 class ExperimentDecision(str, enum.Enum):
     """Decision outcome after statistical analysis."""
+
     SHIP_VARIANT = "ship_variant"
     KEEP_CONTROL = "keep_control"
     INCONCLUSIVE = "inconclusive"
@@ -30,6 +34,7 @@ class Experiment(Base):
     Tracks the experiment hypothesis, primary metric, timeline,
     and links to variant results for statistical analysis.
     """
+
     __tablename__ = "experiments"
 
     id = Column(String, primary_key=True)
@@ -68,7 +73,9 @@ class Experiment(Base):
     metadata_ = Column("metadata", JSON)
 
     # Relationship to variant results
-    variants = relationship("VariantResult", back_populates="experiment", cascade="all, delete-orphan")
+    variants = relationship(
+        "VariantResult", back_populates="experiment", cascade="all, delete-orphan"
+    )
 
 
 class VariantResult(Base):
@@ -78,6 +85,7 @@ class VariantResult(Base):
     Stores the sample size and conversions for each variant,
     enabling lift and statistical significance calculations.
     """
+
     __tablename__ = "variant_results"
 
     id = Column(String, primary_key=True)

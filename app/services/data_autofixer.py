@@ -1,8 +1,8 @@
-import pandas as pd
 import re
-from typing import List, Dict, Any, Tuple, Optional
 from dataclasses import dataclass, field
-from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import pandas as pd
 
 
 @dataclass
@@ -43,51 +43,135 @@ class AutoFixResult:
                     "column": f.column,
                     "fix_type": f.fix_type,
                     "description": f.description,
-                    "rows_affected": f.rows_affected
+                    "rows_affected": f.rows_affected,
                 }
                 for f in self.fixes_applied
-            ]
+            ],
         }
 
 
 class DataAutoFixer:
     # Currency symbols to strip
-    CURRENCY_SYMBOLS = r'[\$\£\€\¥\₹\₽\₩\฿]'
+    CURRENCY_SYMBOLS = r"[\$\£\€\¥\₹\₽\₩\฿]"
 
     # Date keywords for column detection
-    DATE_KEYWORDS = ['date', 'time', 'created', 'updated', 'timestamp', 'at', 'on', 'day']
+    DATE_KEYWORDS = ["date", "time", "created", "updated", "timestamp", "at", "on", "day"]
 
     # Amount keywords for column detection
-    AMOUNT_KEYWORDS = ['amount', 'price', 'cost', 'revenue', 'total', 'payment', 'fee',
-                       'value', 'sum', 'balance', 'income', 'expense', 'salary', 'budget']
+    AMOUNT_KEYWORDS = [
+        "amount",
+        "price",
+        "cost",
+        "revenue",
+        "total",
+        "payment",
+        "fee",
+        "value",
+        "sum",
+        "balance",
+        "income",
+        "expense",
+        "salary",
+        "budget",
+    ]
 
     # Boolean value mappings
     BOOLEAN_MAP = {
-        'true': True, 'false': False,
-        't': True, 'f': False,
-        'yes': True, 'no': False,
-        'y': True, 'n': False,
-        '1': True, '0': False,
-        'on': True, 'off': False,
+        "true": True,
+        "false": False,
+        "t": True,
+        "f": False,
+        "yes": True,
+        "no": False,
+        "y": True,
+        "n": False,
+        "1": True,
+        "0": False,
+        "on": True,
+        "off": False,
     }
 
     # Column name mappings - maps variations to standard names
     COLUMN_MAPPINGS = {
-        'amount': ['revenue', 'total', 'price', 'value', 'sale', 'sales', 'payment',
-                   'transaction_amount', 'order_total', 'order_value', 'purchase_amount',
-                   'gross', 'net', 'subtotal', 'grand_total', 'money', 'usd', 'dollars'],
-        'date': ['created_at', 'created', 'timestamp', 'datetime', 'order_date',
-                 'transaction_date', 'purchase_date', 'sale_date', 'time', 'day',
-                 'created_on', 'updated_at', 'paid_at', 'payment_date'],
-        'status': ['payment_status', 'order_status', 'transaction_status', 'state',
-                   'paid', 'completed', 'is_paid', 'is_completed', 'payment_state'],
-        'customer_id': ['user_id', 'customer', 'user', 'client_id', 'client',
-                        'buyer_id', 'buyer', 'account_id', 'member_id'],
-        'product': ['item', 'product_name', 'item_name', 'sku', 'product_id',
-                    'service', 'offering', 'goods'],
-        'source': ['channel', 'utm_source', 'marketing_channel', 'acquisition_channel',
-                    'referrer', 'medium', 'utm_medium', 'traffic_source'],
-        'campaign': ['campaign_name', 'utm_campaign', 'ad_campaign', 'marketing_campaign'],
+        "amount": [
+            "revenue",
+            "total",
+            "price",
+            "value",
+            "sale",
+            "sales",
+            "payment",
+            "transaction_amount",
+            "order_total",
+            "order_value",
+            "purchase_amount",
+            "gross",
+            "net",
+            "subtotal",
+            "grand_total",
+            "money",
+            "usd",
+            "dollars",
+        ],
+        "date": [
+            "created_at",
+            "created",
+            "timestamp",
+            "datetime",
+            "order_date",
+            "transaction_date",
+            "purchase_date",
+            "sale_date",
+            "time",
+            "day",
+            "created_on",
+            "updated_at",
+            "paid_at",
+            "payment_date",
+        ],
+        "status": [
+            "payment_status",
+            "order_status",
+            "transaction_status",
+            "state",
+            "paid",
+            "completed",
+            "is_paid",
+            "is_completed",
+            "payment_state",
+        ],
+        "customer_id": [
+            "user_id",
+            "customer",
+            "user",
+            "client_id",
+            "client",
+            "buyer_id",
+            "buyer",
+            "account_id",
+            "member_id",
+        ],
+        "product": [
+            "item",
+            "product_name",
+            "item_name",
+            "sku",
+            "product_id",
+            "service",
+            "offering",
+            "goods",
+        ],
+        "source": [
+            "channel",
+            "utm_source",
+            "marketing_channel",
+            "acquisition_channel",
+            "referrer",
+            "medium",
+            "utm_medium",
+            "traffic_source",
+        ],
+        "campaign": ["campaign_name", "utm_campaign", "ad_campaign", "marketing_campaign"],
     }
 
     def __init__(self, df: pd.DataFrame):
@@ -112,13 +196,13 @@ class DataAutoFixer:
             fixes_applied=self.fixes_applied,
             rows_before=self.rows_before,
             rows_after=len(self.df),
-            columns_fixed=columns_fixed
+            columns_fixed=columns_fixed,
         )
 
     def _normalize_column_names(self):
         # First, lowercase all column names for easier matching
         original_cols = self.df.columns.tolist()
-        normalized_cols = [col.lower().strip().replace(' ', '_') for col in original_cols]
+        normalized_cols = [col.lower().strip().replace(" ", "_") for col in original_cols]
 
         # Track which columns we've already mapped to avoid duplicates
         mapped_to = set()
@@ -143,7 +227,7 @@ class DataAutoFixer:
                         column=original_cols[i],
                         fix_type="column_rename",
                         description=f"Renamed '{original_cols[i]}' to '{standard_name}' for compatibility",
-                        rows_affected=len(self.df)
+                        rows_affected=len(self.df),
                     )
                     break
 
@@ -156,7 +240,7 @@ class DataAutoFixer:
                             column=original_cols[i],
                             fix_type="column_rename",
                             description=f"Renamed '{original_cols[i]}' to '{standard_name}' for compatibility",
-                            rows_affected=len(self.df)
+                            rows_affected=len(self.df),
                         )
                         break
                 else:
@@ -167,20 +251,29 @@ class DataAutoFixer:
         if new_cols != original_cols:
             self.df.columns = new_cols
 
-    def _add_fix(self, column: str, fix_type: str, description: str,
-                 rows_affected: int, sample_before: Any = None, sample_after: Any = None):
+    def _add_fix(
+        self,
+        column: str,
+        fix_type: str,
+        description: str,
+        rows_affected: int,
+        sample_before: Any = None,
+        sample_after: Any = None,
+    ):
         if rows_affected > 0:
-            self.fixes_applied.append(FixApplied(
-                column=column,
-                fix_type=fix_type,
-                description=description,
-                rows_affected=rows_affected,
-                sample_before=sample_before,
-                sample_after=sample_after
-            ))
+            self.fixes_applied.append(
+                FixApplied(
+                    column=column,
+                    fix_type=fix_type,
+                    description=description,
+                    rows_affected=rows_affected,
+                    sample_before=sample_before,
+                    sample_after=sample_after,
+                )
+            )
 
     def _fix_whitespace(self):
-        for col in self.df.select_dtypes(include=['object']).columns:
+        for col in self.df.select_dtypes(include=["object"]).columns:
             original = self.df[col].copy()
 
             # Only apply to string values
@@ -197,11 +290,11 @@ class DataAutoFixer:
                         column=col,
                         fix_type="whitespace",
                         description=f"Trimmed whitespace from {rows_affected} values",
-                        rows_affected=rows_affected
+                        rows_affected=rows_affected,
                     )
 
     def _fix_numeric_strings(self):
-        for col in self.df.select_dtypes(include=['object']).columns:
+        for col in self.df.select_dtypes(include=["object"]).columns:
             # Check if this column looks like it should be numeric
             if not self._column_looks_numeric(col):
                 continue
@@ -230,7 +323,7 @@ class DataAutoFixer:
                         description=f"Converted {rows_affected} text values to numbers",
                         rows_affected=rows_affected,
                         sample_before=sample_before,
-                        sample_after=sample_after
+                        sample_after=sample_after,
                     )
 
     def _column_looks_numeric(self, col: str) -> bool:
@@ -262,12 +355,12 @@ class DataAutoFixer:
 
         try:
             # Strip currency symbols and commas
-            cleaned = re.sub(self.CURRENCY_SYMBOLS, '', str(val))
-            cleaned = cleaned.replace(',', '').strip()
+            cleaned = re.sub(self.CURRENCY_SYMBOLS, "", str(val))
+            cleaned = cleaned.replace(",", "").strip()
 
             # Handle negative numbers in parentheses: (100) -> -100
-            if cleaned.startswith('(') and cleaned.endswith(')'):
-                cleaned = '-' + cleaned[1:-1]
+            if cleaned.startswith("(") and cleaned.endswith(")"):
+                cleaned = "-" + cleaned[1:-1]
 
             float(cleaned)
             return True
@@ -282,12 +375,12 @@ class DataAutoFixer:
                 return val
 
             try:
-                cleaned = re.sub(self.CURRENCY_SYMBOLS, '', str(val))
-                cleaned = cleaned.replace(',', '').strip()
+                cleaned = re.sub(self.CURRENCY_SYMBOLS, "", str(val))
+                cleaned = cleaned.replace(",", "").strip()
 
                 # Handle negative in parentheses
-                if cleaned.startswith('(') and cleaned.endswith(')'):
-                    cleaned = '-' + cleaned[1:-1]
+                if cleaned.startswith("(") and cleaned.endswith(")"):
+                    cleaned = "-" + cleaned[1:-1]
 
                 return float(cleaned)
             except (ValueError, TypeError):
@@ -300,7 +393,7 @@ class DataAutoFixer:
         new_numeric = converted.apply(lambda x: isinstance(x, (int, float)) and pd.notna(x)).sum()
 
         if new_numeric > original_numeric:
-            return pd.to_numeric(converted, errors='coerce')
+            return pd.to_numeric(converted, errors="coerce")
         return None
 
     def _fix_date_columns(self):
@@ -324,7 +417,7 @@ class DataAutoFixer:
 
             # Try to parse dates
             try:
-                parsed = pd.to_datetime(self.df[col], errors='coerce', format='mixed')
+                parsed = pd.to_datetime(self.df[col], errors="coerce", format="mixed")
 
                 # Count successful conversions (was string, now valid datetime)
                 was_string = original.apply(lambda x: isinstance(x, str) and pd.notna(x))
@@ -343,7 +436,7 @@ class DataAutoFixer:
                         description=f"Parsed {rows_affected} date strings to datetime",
                         rows_affected=rows_affected,
                         sample_before=sample_before,
-                        sample_after=sample_after
+                        sample_after=sample_after,
                     )
             except Exception:
                 pass  # If parsing fails entirely, skip this column
@@ -357,7 +450,7 @@ class DataAutoFixer:
             return False
 
         try:
-            parsed = pd.to_datetime(sample, errors='coerce', format='mixed')
+            parsed = pd.to_datetime(sample, errors="coerce", format="mixed")
             valid_count = parsed.notna().sum()
             return valid_count >= len(sample) * 0.7
         except Exception:
@@ -366,18 +459,24 @@ class DataAutoFixer:
     def _fix_boolean_strings(self):
         # Map various boolean representations to standard strings
         STRING_BOOL_MAP = {
-            'true': 'true', 'false': 'false',
-            't': 'true', 'f': 'false',
-            'yes': 'yes', 'no': 'no',
-            'y': 'yes', 'n': 'no',
-            '1': 'true', '0': 'false',
-            'on': 'true', 'off': 'false',
+            "true": "true",
+            "false": "false",
+            "t": "true",
+            "f": "false",
+            "yes": "yes",
+            "no": "no",
+            "y": "yes",
+            "n": "no",
+            "1": "true",
+            "0": "false",
+            "on": "true",
+            "off": "false",
         }
 
-        for col in self.df.select_dtypes(include=['object']).columns:
+        for col in self.df.select_dtypes(include=["object"]).columns:
             # Skip columns that look like status columns (keep their original values)
             col_lower = col.lower()
-            if any(kw in col_lower for kw in ['status', 'state', 'stage']):
+            if any(kw in col_lower for kw in ["status", "state", "stage"]):
                 # For status columns, just lowercase and strip
                 original = self.df[col].copy()
 
@@ -387,10 +486,14 @@ class DataAutoFixer:
                     cleaned = str(val).lower().strip()
                     # Map common variations to standard values
                     status_map = {
-                        'yes': 'paid', 'no': 'unpaid',
-                        'y': 'paid', 'n': 'unpaid',
-                        'true': 'paid', 'false': 'unpaid',
-                        '1': 'paid', '0': 'unpaid',
+                        "yes": "paid",
+                        "no": "unpaid",
+                        "y": "paid",
+                        "n": "unpaid",
+                        "true": "paid",
+                        "false": "unpaid",
+                        "1": "paid",
+                        "0": "unpaid",
                     }
                     return status_map.get(cleaned, cleaned)
 
@@ -404,7 +507,7 @@ class DataAutoFixer:
                         column=col,
                         fix_type="status_standardization",
                         description=f"Standardized {rows_affected} status values",
-                        rows_affected=rows_affected
+                        rows_affected=rows_affected,
                     )
                 continue
 
@@ -440,7 +543,7 @@ class DataAutoFixer:
                     column=col,
                     fix_type="boolean_standardization",
                     description=f"Standardized {rows_affected} boolean values to consistent format",
-                    rows_affected=rows_affected
+                    rows_affected=rows_affected,
                 )
 
     def _fix_duplicate_columns(self):
@@ -458,7 +561,7 @@ class DataAutoFixer:
                     column=col,
                     fix_type="duplicate_rename",
                     description=f"Renamed duplicate column to '{new_name}'",
-                    rows_affected=len(self.df)
+                    rows_affected=len(self.df),
                 )
             else:
                 seen[col] = 0

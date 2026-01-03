@@ -1,16 +1,14 @@
-import pandas as pd
 from datetime import datetime
 from typing import Optional
+
+import pandas as pd
 from prefect import task
 from prefect.logging import get_run_logger
 
 
 @task(retries=2, retry_delay_seconds=10)
 def load_to_staging(
-    df: pd.DataFrame,
-    table_name: str,
-    connection_string: str,
-    if_exists: str = "replace"
+    df: pd.DataFrame, table_name: str, connection_string: str, if_exists: str = "replace"
 ) -> dict:
     logger = get_run_logger()
     from sqlalchemy import create_engine
@@ -23,12 +21,7 @@ def load_to_staging(
     df["_source_rows"] = len(df)
 
     df.to_sql(
-        staging_table,
-        engine,
-        if_exists=if_exists,
-        index=False,
-        method="multi",
-        chunksize=1000
+        staging_table, engine, if_exists=if_exists, index=False, method="multi", chunksize=1000
     )
 
     logger.info(f"Loaded {len(df)} rows to {staging_table}")
@@ -47,7 +40,7 @@ def load_to_warehouse(
     table_name: str,
     connection_string: str,
     if_exists: str = "append",
-    schema: Optional[str] = None
+    schema: Optional[str] = None,
 ) -> dict:
     logger = get_run_logger()
     from sqlalchemy import create_engine
@@ -61,10 +54,14 @@ def load_to_warehouse(
         if_exists=if_exists,
         index=False,
         method="multi",
-        chunksize=1000
+        chunksize=1000,
     )
 
-    logger.info(f"Loaded {len(df)} rows to {schema}.{table_name}" if schema else f"Loaded {len(df)} rows to {table_name}")
+    logger.info(
+        f"Loaded {len(df)} rows to {schema}.{table_name}"
+        if schema
+        else f"Loaded {len(df)} rows to {table_name}"
+    )
 
     return {
         "table": table_name,
@@ -76,17 +73,11 @@ def load_to_warehouse(
 
 @task
 def load_to_parquet(
-    df: pd.DataFrame,
-    file_path: str,
-    partition_cols: Optional[list[str]] = None
+    df: pd.DataFrame, file_path: str, partition_cols: Optional[list[str]] = None
 ) -> dict:
     logger = get_run_logger()
 
-    df.to_parquet(
-        file_path,
-        partition_cols=partition_cols,
-        index=False
-    )
+    df.to_parquet(file_path, partition_cols=partition_cols, index=False)
 
     logger.info(f"Saved {len(df)} rows to {file_path}")
 
@@ -99,10 +90,7 @@ def load_to_parquet(
 
 @task
 def upsert_to_table(
-    df: pd.DataFrame,
-    table_name: str,
-    connection_string: str,
-    key_columns: list[str]
+    df: pd.DataFrame, table_name: str, connection_string: str, key_columns: list[str]
 ) -> dict:
     logger = get_run_logger()
     from sqlalchemy import create_engine, text
@@ -136,9 +124,7 @@ def upsert_to_table(
         logger.warning("MERGE not supported, falling back to delete-insert")
         with engine.connect() as conn:
             for _, row in df.iterrows():
-                key_filter = " AND ".join([
-                    f"{col} = '{row[col]}'" for col in key_columns
-                ])
+                key_filter = " AND ".join([f"{col} = '{row[col]}'" for col in key_columns])
                 conn.execute(text(f"DELETE FROM {table_name} WHERE {key_filter}"))
             conn.commit()
         df.to_sql(table_name, engine, if_exists="append", index=False)

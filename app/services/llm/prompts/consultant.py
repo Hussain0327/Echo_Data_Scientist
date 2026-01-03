@@ -75,11 +75,8 @@ Available upload endpoint: POST /api/v1/ingestion/upload/csv or /upload/excel
 
 
 def build_system_prompt(
-    data_summary: str = None,
-    metrics_summary: str = None,
-    conversation_history: str = None
+    data_summary: str = None, metrics_summary: str = None, conversation_history: str = None
 ) -> str:
-
     base_prompt = CONSULTANT_SYSTEM_PROMPT
 
     if not data_summary and not metrics_summary:
@@ -88,7 +85,7 @@ def build_system_prompt(
     context = CONTEXT_TEMPLATE.format(
         data_summary=data_summary or "No data loaded.",
         metrics_summary=metrics_summary or "No metrics calculated yet.",
-        conversation_history=conversation_history or "This is the start of the conversation."
+        conversation_history=conversation_history or "This is the start of the conversation.",
     )
 
     return base_prompt + "\n\n" + context

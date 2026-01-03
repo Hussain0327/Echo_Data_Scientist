@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from generators.synthetic_data import SyntheticDataGenerator, ScaleConfig
+from generators.synthetic_data import ScaleConfig, SyntheticDataGenerator
 
 
 def format_size(size_bytes: int) -> str:
@@ -49,8 +49,8 @@ def save_dataframe(
 
 def cmd_generate(args: argparse.Namespace) -> int:
     """Generate synthetic data at specified scale."""
-    print(f"\nSynthetic Data Generator")
-    print(f"========================")
+    print("\nSynthetic Data Generator")
+    print("========================")
     print(f"Scale: {args.scale}")
     print(f"Output: {args.output_dir}")
     print(f"Format: {args.format}")
@@ -86,7 +86,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
 
     # Print summary
     print(f"\n{'='*60}")
-    print(f"Generation Summary")
+    print("Generation Summary")
     print(f"{'='*60}")
     print(f"Total rows: {sum(len(df) for df in data.values()):,}")
     print(f"Total size: {format_size(total_size)}")
@@ -101,7 +101,9 @@ def cmd_generate(args: argparse.Namespace) -> int:
         "seed": args.seed,
         "format": args.format,
         "include_history": not args.no_history,
-        "files": {name: {"rows": len(df), "size_bytes": file_sizes[name]} for name, df in data.items()},
+        "files": {
+            name: {"rows": len(df), "size_bytes": file_sizes[name]} for name, df in data.items()
+        },
         "total_rows": sum(len(df) for df in data.values()),
         "total_size_bytes": total_size,
         "generation_time_seconds": elapsed,

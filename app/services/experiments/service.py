@@ -1,22 +1,22 @@
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.experiment import Experiment, VariantResult, ExperimentStatus, ExperimentDecision
+from app.models.experiment import Experiment, ExperimentDecision, ExperimentStatus, VariantResult
 from app.models.schemas import (
     CreateExperimentRequest,
-    UpdateExperimentRequest,
-    SubmitVariantResultsRequest,
-    VariantResultRequest,
-    ExperimentResponse,
-    ExperimentSummary,
-    VariantResultResponse,
-    StatisticalResult,
-    ExperimentStatusEnum,
     ExperimentDecisionEnum,
+    ExperimentResponse,
+    ExperimentStatusEnum,
+    ExperimentSummary,
+    StatisticalResult,
+    SubmitVariantResultsRequest,
+    UpdateExperimentRequest,
+    VariantResultResponse,
 )
 from app.services.experiments.stats import (
     VariantData,
@@ -25,14 +25,11 @@ from app.services.experiments.stats import (
 
 
 class ExperimentService:
-
     def __init__(self, db: AsyncSession):
         self.db = db
 
     async def create_experiment(
-        self,
-        request: CreateExperimentRequest,
-        user_id: str = "default"
+        self, request: CreateExperimentRequest, user_id: str = "default"
     ) -> Experiment:
         experiment = Experiment(
             id=str(uuid.uuid4()),
@@ -71,7 +68,7 @@ class ExperimentService:
         user_id: str = "default",
         status: Optional[ExperimentStatusEnum] = None,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[Experiment]:
         query = (
             select(Experiment)
@@ -89,9 +86,7 @@ class ExperimentService:
         return list(result.scalars().all())
 
     async def update_experiment(
-        self,
-        experiment_id: str,
-        request: UpdateExperimentRequest
+        self, experiment_id: str, request: UpdateExperimentRequest
     ) -> Optional[Experiment]:
         experiment = await self.get_experiment(experiment_id)
         if not experiment:
@@ -116,9 +111,7 @@ class ExperimentService:
         return experiment
 
     async def submit_variant_results(
-        self,
-        experiment_id: str,
-        request: SubmitVariantResultsRequest
+        self, experiment_id: str, request: SubmitVariantResultsRequest
     ) -> Optional[Experiment]:
         experiment = await self.get_experiment(experiment_id)
         if not experiment:
@@ -137,7 +130,9 @@ class ExperimentService:
                 is_control=1 if variant_request.is_control else 0,
                 users=variant_request.users,
                 conversions=variant_request.conversions,
-                conversion_rate=variant_request.conversions / variant_request.users if variant_request.users > 0 else 0,
+                conversion_rate=variant_request.conversions / variant_request.users
+                if variant_request.users > 0
+                else 0,
                 revenue=variant_request.revenue,
                 avg_order_value=variant_request.avg_order_value,
                 funnel_metrics=variant_request.funnel_metrics,
@@ -188,21 +183,19 @@ class ExperimentService:
             name=control_result.variant_name,
             users=control_result.users,
             conversions=control_result.conversions,
-            is_control=True
+            is_control=True,
         )
 
         variant = VariantData(
             name=variant_result.variant_name,
             users=variant_result.users,
             conversions=variant_result.conversions,
-            is_control=False
+            is_control=False,
         )
 
         # Run analysis
         analysis = analyze_experiment(
-            control=control,
-            variant=variant,
-            alpha=experiment.significance_level
+            control=control, variant=variant, alpha=experiment.significance_level
         )
 
         # Update experiment decision
@@ -211,10 +204,7 @@ class ExperimentService:
 
         await self.db.commit()
 
-    async def get_experiment_summary(
-        self,
-        experiment_id: str
-    ) -> Optional[ExperimentSummary]:
+    async def get_experiment_summary(self, experiment_id: str) -> Optional[ExperimentSummary]:
         experiment = await self.get_experiment(experiment_id)
         if not experiment:
             return None
@@ -263,7 +253,9 @@ class ExperimentService:
                     is_control=True,
                     users=control_result.users,
                     conversions=control_result.conversions,
-                    conversion_rate=control_result.conversion_rate * 100 if control_result.conversion_rate else 0,
+                    conversion_rate=control_result.conversion_rate * 100
+                    if control_result.conversion_rate
+                    else 0,
                     revenue=control_result.revenue,
                     avg_order_value=control_result.avg_order_value,
                     funnel_metrics=control_result.funnel_metrics,
@@ -275,7 +267,9 @@ class ExperimentService:
                     is_control=False,
                     users=variant_result.users,
                     conversions=variant_result.conversions,
-                    conversion_rate=variant_result.conversion_rate * 100 if variant_result.conversion_rate else 0,
+                    conversion_rate=variant_result.conversion_rate * 100
+                    if variant_result.conversion_rate
+                    else 0,
                     revenue=variant_result.revenue,
                     avg_order_value=variant_result.avg_order_value,
                     funnel_metrics=variant_result.funnel_metrics,
@@ -287,20 +281,18 @@ class ExperimentService:
                     name=control_result.variant_name,
                     users=control_result.users,
                     conversions=control_result.conversions,
-                    is_control=True
+                    is_control=True,
                 )
 
                 variant = VariantData(
                     name=variant_result.variant_name,
                     users=variant_result.users,
                     conversions=variant_result.conversions,
-                    is_control=False
+                    is_control=False,
                 )
 
                 analysis = analyze_experiment(
-                    control=control,
-                    variant=variant,
-                    alpha=experiment.significance_level
+                    control=control, variant=variant, alpha=experiment.significance_level
                 )
 
                 statistics = StatisticalResult(
@@ -346,7 +338,9 @@ class ExperimentService:
 
         return True
 
-    def to_response(self, experiment: Experiment, variants_loaded: bool = True) -> ExperimentResponse:
+    def to_response(
+        self, experiment: Experiment, variants_loaded: bool = True
+    ) -> ExperimentResponse:
         variants = []
         if variants_loaded:
             variants = [

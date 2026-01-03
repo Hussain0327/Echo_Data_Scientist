@@ -1,7 +1,8 @@
 import subprocess
-import pandas as pd
 from pathlib import Path
 from typing import Optional
+
+import pandas as pd
 from prefect import task
 from prefect.logging import get_run_logger
 
@@ -11,7 +12,7 @@ def run_dbt(
     command: str = "run",
     select: Optional[str] = None,
     target: str = "dev",
-    project_dir: Optional[str] = None
+    project_dir: Optional[str] = None,
 ) -> dict:
     logger = get_run_logger()
 
@@ -25,12 +26,7 @@ def run_dbt(
 
     logger.info(f"Running: {' '.join(cmd)}")
 
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        cwd=project_dir
-    )
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=project_dir)
 
     if result.returncode != 0:
         logger.error(f"dbt {command} failed: {result.stderr}")
@@ -47,38 +43,21 @@ def run_dbt(
 
 
 @task
-def run_dbt_test(
-    select: Optional[str] = None,
-    project_dir: Optional[str] = None
-) -> dict:
-    return run_dbt.fn(
-        command="test",
-        select=select,
-        project_dir=project_dir
-    )
+def run_dbt_test(select: Optional[str] = None, project_dir: Optional[str] = None) -> dict:
+    return run_dbt.fn(command="test", select=select, project_dir=project_dir)
 
 
 @task
-def run_dbt_build(
-    select: Optional[str] = None,
-    project_dir: Optional[str] = None
-) -> dict:
-    return run_dbt.fn(
-        command="build",
-        select=select,
-        project_dir=project_dir
-    )
+def run_dbt_build(select: Optional[str] = None, project_dir: Optional[str] = None) -> dict:
+    return run_dbt.fn(command="build", select=select, project_dir=project_dir)
 
 
 @task
-def calculate_metrics(
-    df: pd.DataFrame,
-    metrics: Optional[list[str]] = None
-) -> dict:
+def calculate_metrics(df: pd.DataFrame, metrics: Optional[list[str]] = None) -> dict:
     logger = get_run_logger()
 
-    from app.services.metrics.registry import create_metrics_engine
     from app.services.data_autofixer import auto_fix_dataframe
+    from app.services.metrics.registry import create_metrics_engine
 
     fix_result = auto_fix_dataframe(df)
     df = fix_result.df
@@ -110,10 +89,7 @@ def calculate_metrics(
 
 
 @task
-def apply_transformations(
-    df: pd.DataFrame,
-    transformations: list[dict]
-) -> pd.DataFrame:
+def apply_transformations(df: pd.DataFrame, transformations: list[dict]) -> pd.DataFrame:
     logger = get_run_logger()
 
     for transform in transformations:

@@ -26,9 +26,8 @@ Usage:
     freshness = monitor.check_freshness("fct_transactions", max_age_hours=6)
 """
 
-import os
 from dataclasses import dataclass, field
-from datetime import datetime, time, timedelta
+from datetime import datetime, time
 from typing import Any, Optional
 
 import structlog
@@ -373,9 +372,7 @@ class SLAMonitor:
         results = []
 
         # Runtime check
-        results.append(
-            self.check_pipeline_runtime(pipeline_name, started_at, completed_at)
-        )
+        results.append(self.check_pipeline_runtime(pipeline_name, started_at, completed_at))
 
         # Completion time check
         results.append(self.check_completion_time(pipeline_name, completed_at))
@@ -433,13 +430,15 @@ class SLAMonitor:
                 f"| {name} | {status} | {result.hours_stale:.1f} | {result.max_age_hours} |"
             )
 
-        lines.extend([
-            "",
-            "## SLA Definitions",
-            "",
-            "| Pipeline/Table | Max Runtime | Max Latency | Completion Time |",
-            "|----------------|-------------|-------------|-----------------|",
-        ])
+        lines.extend(
+            [
+                "",
+                "## SLA Definitions",
+                "",
+                "| Pipeline/Table | Max Runtime | Max Latency | Completion Time |",
+                "|----------------|-------------|-------------|-----------------|",
+            ]
+        )
 
         for name, sla in self.slas.items():
             completion = sla.required_completion_time or "-"

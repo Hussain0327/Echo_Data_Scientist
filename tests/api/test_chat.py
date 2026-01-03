@@ -1,17 +1,18 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from httpx import AsyncClient, ASGITransport
-from datetime import datetime
 import io
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+
+from app.main import app
+from app.services.llm.conversation import ChatResponse, ConversationContext, Message
 
 # Skip all tests in this module if DB is not available
 pytestmark = pytest.mark.skipif(
     True,  # Set to False when running with Docker
-    reason="Integration tests require database connection"
+    reason="Integration tests require database connection",
 )
-
-from app.main import app
-from app.services.llm.conversation import ChatResponse, ConversationContext, Message
 
 
 @pytest.fixture
@@ -24,24 +25,22 @@ def sample_csv():
 
 
 class TestChatEndpoint:
-
     @pytest.mark.asyncio
     async def test_chat_basic(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
-            mock_service.chat = AsyncMock(return_value=ChatResponse(
-                message="Hello! I'm Echo, your data consultant.",
-                session_id="test-session-123",
-                timestamp=datetime.now()
-            ))
+            mock_service.chat = AsyncMock(
+                return_value=ChatResponse(
+                    message="Hello! I'm Echo, your data consultant.",
+                    session_id="test-session-123",
+                    timestamp=datetime.now(),
+                )
+            )
             mock_get_service.return_value = mock_service
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.post(
-                    "/api/v1/chat",
-                    json={"message": "Hi!"}
-                )
+                response = await client.post("/api/v1/chat", json={"message": "Hi!"})
 
             assert response.status_code == 200
             data = response.json()
@@ -51,23 +50,20 @@ class TestChatEndpoint:
 
     @pytest.mark.asyncio
     async def test_chat_with_session_id(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
-            mock_service.chat = AsyncMock(return_value=ChatResponse(
-                message="Welcome back!",
-                session_id="existing-session",
-                timestamp=datetime.now()
-            ))
+            mock_service.chat = AsyncMock(
+                return_value=ChatResponse(
+                    message="Welcome back!", session_id="existing-session", timestamp=datetime.now()
+                )
+            )
             mock_get_service.return_value = mock_service
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.post(
                     "/api/v1/chat",
-                    json={
-                        "message": "Hello again",
-                        "session_id": "existing-session"
-                    }
+                    json={"message": "Hello again", "session_id": "existing-session"},
                 )
 
             assert response.status_code == 200
@@ -76,35 +72,31 @@ class TestChatEndpoint:
 
     @pytest.mark.asyncio
     async def test_chat_service_error(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
-            mock_service.chat = AsyncMock(
-                side_effect=Exception("LLM API error")
-            )
+            mock_service.chat = AsyncMock(side_effect=Exception("LLM API error"))
             mock_get_service.return_value = mock_service
 
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.post(
-                    "/api/v1/chat",
-                    json={"message": "Hello"}
-                )
+                response = await client.post("/api/v1/chat", json={"message": "Hello"})
 
             assert response.status_code == 500
             assert "Chat service error" in response.json()["detail"]
 
 
 class TestChatWithDataEndpoint:
-
     @pytest.mark.asyncio
     async def test_chat_with_data(self, sample_csv):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
-            mock_service.chat = AsyncMock(return_value=ChatResponse(
-                message="I see your revenue data. Total is $600.",
-                session_id="data-session",
-                timestamp=datetime.now()
-            ))
+            mock_service.chat = AsyncMock(
+                return_value=ChatResponse(
+                    message="I see your revenue data. Total is $600.",
+                    session_id="data-session",
+                    timestamp=datetime.now(),
+                )
+            )
             mock_get_service.return_value = mock_service
 
             transport = ASGITransport(app=app)
@@ -112,7 +104,7 @@ class TestChatWithDataEndpoint:
                 response = await client.post(
                     "/api/v1/chat/with-data",
                     params={"message": "What's my total revenue?"},
-                    files={"file": ("test.csv", io.BytesIO(sample_csv), "text/csv")}
+                    files={"file": ("test.csv", io.BytesIO(sample_csv), "text/csv")},
                 )
 
             assert response.status_code == 200
@@ -122,7 +114,7 @@ class TestChatWithDataEndpoint:
 
     @pytest.mark.asyncio
     async def test_chat_with_data_non_csv(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
             mock_get_service.return_value = mock_service
 
@@ -131,7 +123,7 @@ class TestChatWithDataEndpoint:
                 response = await client.post(
                     "/api/v1/chat/with-data",
                     params={"message": "Analyze this"},
-                    files={"file": ("test.txt", io.BytesIO(b"not csv"), "text/plain")}
+                    files={"file": ("test.txt", io.BytesIO(b"not csv"), "text/plain")},
                 )
 
             assert response.status_code == 400
@@ -139,7 +131,7 @@ class TestChatWithDataEndpoint:
 
     @pytest.mark.asyncio
     async def test_chat_with_data_empty_file(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
             mock_get_service.return_value = mock_service
 
@@ -148,7 +140,7 @@ class TestChatWithDataEndpoint:
                 response = await client.post(
                     "/api/v1/chat/with-data",
                     params={"message": "Analyze this"},
-                    files={"file": ("empty.csv", io.BytesIO(b""), "text/csv")}
+                    files={"file": ("empty.csv", io.BytesIO(b""), "text/csv")},
                 )
 
             assert response.status_code == 400
@@ -156,10 +148,9 @@ class TestChatWithDataEndpoint:
 
 
 class TestLoadDataEndpoint:
-
     @pytest.mark.asyncio
     async def test_load_data(self, sample_csv):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service.update_data_context = MagicMock()
             mock_get_service.return_value = mock_service
@@ -169,7 +160,7 @@ class TestLoadDataEndpoint:
                 response = await client.post(
                     "/api/v1/chat/load-data",
                     params={"session_id": "load-session"},
-                    files={"file": ("sales.csv", io.BytesIO(sample_csv), "text/csv")}
+                    files={"file": ("sales.csv", io.BytesIO(sample_csv), "text/csv")},
                 )
 
             assert response.status_code == 200
@@ -181,19 +172,18 @@ class TestLoadDataEndpoint:
 
 
 class TestHistoryEndpoint:
-
     @pytest.mark.asyncio
     async def test_get_history(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service._sessions = {
                 "history-session": ConversationContext(
                     session_id="history-session",
                     messages=[
                         Message(role="user", content="Hello"),
-                        Message(role="assistant", content="Hi there!")
+                        Message(role="assistant", content="Hi there!"),
                     ],
-                    data_summary="Some data"
+                    data_summary="Some data",
                 )
             }
             mock_get_service.return_value = mock_service
@@ -210,7 +200,7 @@ class TestHistoryEndpoint:
 
     @pytest.mark.asyncio
     async def test_get_history_not_found(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service._sessions = {}
             mock_get_service.return_value = mock_service
@@ -223,10 +213,9 @@ class TestHistoryEndpoint:
 
 
 class TestClearSessionEndpoint:
-
     @pytest.mark.asyncio
     async def test_clear_session(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service.clear_session = MagicMock(return_value=True)
             mock_get_service.return_value = mock_service
@@ -240,7 +229,7 @@ class TestClearSessionEndpoint:
 
     @pytest.mark.asyncio
     async def test_clear_session_not_found(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service.clear_session = MagicMock(return_value=False)
             mock_get_service.return_value = mock_service
@@ -253,21 +242,17 @@ class TestClearSessionEndpoint:
 
 
 class TestListSessionsEndpoint:
-
     @pytest.mark.asyncio
     async def test_list_sessions(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service._sessions = {
                 "session-1": ConversationContext(
                     session_id="session-1",
                     messages=[Message(role="user", content="test")],
-                    data_summary="data"
+                    data_summary="data",
                 ),
-                "session-2": ConversationContext(
-                    session_id="session-2",
-                    messages=[]
-                )
+                "session-2": ConversationContext(session_id="session-2", messages=[]),
             }
             mock_get_service.return_value = mock_service
 
@@ -282,7 +267,7 @@ class TestListSessionsEndpoint:
 
     @pytest.mark.asyncio
     async def test_list_sessions_empty(self):
-        with patch('app.api.v1.chat.get_conversation_service') as mock_get_service:
+        with patch("app.api.v1.chat.get_conversation_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service._sessions = {}
             mock_get_service.return_value = mock_service

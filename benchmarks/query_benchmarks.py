@@ -20,7 +20,7 @@ import os
 import statistics
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 
@@ -289,9 +289,7 @@ class QueryBenchmark:
 
         # Handle async driver in URL
         if self.database_url.startswith("postgresql+asyncpg://"):
-            self.database_url = self.database_url.replace(
-                "postgresql+asyncpg://", "postgresql://"
-            )
+            self.database_url = self.database_url.replace("postgresql+asyncpg://", "postgresql://")
 
     def _get_connection(self):
         """Get database connection."""
@@ -582,7 +580,7 @@ class QueryBenchmark:
 
         # Generate comparison table
         lines = [
-            f"## Query Performance Comparison",
+            "## Query Performance Comparison",
             "",
             f"| Query | {label1} (ms) | {label2} (ms) | Improvement |",
             "|-------|--------------|--------------|-------------|",

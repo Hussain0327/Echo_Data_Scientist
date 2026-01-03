@@ -1,6 +1,8 @@
-from redis import asyncio as aioredis
-from app.config import get_settings
 from typing import Optional
+
+from redis import asyncio as aioredis
+
+from app.config import get_settings
 
 settings = get_settings()
 

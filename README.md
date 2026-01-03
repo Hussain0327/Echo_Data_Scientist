@@ -24,6 +24,7 @@ Small businesses have data everywhere - spreadsheets, exports, random CSVs. They
 **Analytics Layer**: 20+ business metrics computed deterministically. Revenue trends, cohort retention, customer segmentation, funnel analysis. All tested, all reproducible.
 
 **Two Interfaces**:
+
 - **Streamlit Dashboard** - KPIs, charts, drill-downs for BI-style analysis
 - **Next.js Web App** - Chat interface where you ask questions in plain English, powered by an LLM that explains the numbers (but never calculates them - that's handled by tested Python code)
 
@@ -160,20 +161,21 @@ python -m generators.cli generate --scale 50M --output-dir ./data/generated/50M 
 ```
 
 The generator creates customers, products, transactions, marketing events, and experiments with:
+
 - Proper foreign key relationships
 - Realistic distributions (Pareto for revenue, normal for daily patterns)
 - SCD-triggering changes (customer segment upgrades, price changes)
 
 ### Query Performance Benchmarks
 
-| Query | 1M Rows | 10M Rows | 50M Rows | 50M (Partitioned) | Improvement |
-|-------|---------|----------|----------|-------------------|-------------|
-| Monthly Revenue | 120ms | 890ms | 4.2s | 520ms | **8x faster** |
-| Last 30 Days | 85ms | 340ms | 1.8s | 45ms | **40x faster** |
-| Customer LTV | 340ms | 2.8s | 14s | 1.1s | **13x faster** |
-| Cohort Retention | 890ms | 3.2s | 18s | 4.5s | **4x faster** |
+| Query            | 1M Rows | 10M Rows | 50M Rows | 50M (Partitioned) | Improvement    |
+| ---------------- | ------- | -------- | -------- | ----------------- | -------------- |
+| Monthly Revenue  | 120ms   | 890ms    | 4.2s     | 520ms             | **8x faster**  |
+| Last 30 Days     | 85ms    | 340ms    | 1.8s     | 45ms              | **40x faster** |
+| Customer LTV     | 340ms   | 2.8s     | 14s      | 1.1s              | **13x faster** |
+| Cohort Retention | 890ms   | 3.2s     | 18s      | 4.5s              | **4x faster**  |
 
-*Benchmarks run on PostgreSQL 15, Apple M1, with date-range partitioned tables*
+_Benchmarks run on PostgreSQL 15, Apple M1, with date-range partitioned tables_
 
 ### PostgreSQL Partitioning
 
@@ -197,6 +199,7 @@ CREATE TABLE transactions_partitioned (
 ### Data Modeling
 
 **Star Schema with SCD Type 2** - Proper dimensional modeling with:
+
 - `dim_customer` - Tracks segment and plan changes over time
 - `dim_product` - Tracks price changes for historical revenue accuracy
 - `dim_channel` - Tracks marketing channel reclassifications
@@ -270,6 +273,7 @@ freshness = monitor.check_freshness("fct_transactions", max_age_hours=6)
 ### CI/CD Pipeline
 
 GitHub Actions workflow with:
+
 - Python linting (Ruff, Black, isort)
 - SQL linting (SQLFluff)
 - Test suite with coverage reporting
@@ -282,6 +286,7 @@ GitHub Actions workflow with:
 ## SQL Portfolio
 
 **10+ queries in `sql/analytics/`** covering:
+
 - CTEs and window functions (LAG, LEAD, NTILE, ROW_NUMBER)
 - Cohort retention matrices
 - RFM customer segmentation
@@ -310,6 +315,7 @@ FROM monthly;
 ### Why dbt for Transformations?
 
 I evaluated dbt, Spark, and raw SQL. dbt won because:
+
 1. **Testability** - Built-in testing framework catches data issues before they reach marts
 2. **Lineage** - Auto-generated DAG shows data dependencies
 3. **Incremental** - Native support for incremental models reduces compute cost
@@ -318,6 +324,7 @@ I evaluated dbt, Spark, and raw SQL. dbt won because:
 ### Why SCD Type 2 for Dimensions?
 
 Customer segments and product prices change. Without history:
+
 - "What was our revenue from Enterprise customers in Q1?" becomes unanswerable
 - Cohort analysis breaks when customers upgrade plans
 - A/B test attribution becomes unreliable when customers switch variants
@@ -327,6 +334,7 @@ SCD Type 2 preserves the truth at any point in time.
 ### Why PostgreSQL Partitioning?
 
 At 50M rows, query performance degrades significantly. Partitioning by month enables:
+
 - **Partition pruning** - Queries only scan relevant partitions (8-40x faster)
 - **Efficient archival** - `DROP PARTITION` vs `DELETE` for old data
 - **Better maintenance** - VACUUM runs per-partition, faster index rebuilds
@@ -341,6 +349,7 @@ At 50M rows, query performance degrades significantly. Partitioning by month ena
 ### Why Great Expectations?
 
 Data validation happens BEFORE transformations, not after:
+
 - Expectation suites live alongside code
 - Data docs for stakeholder visibility
 - Integration with Prefect for blocking on failures
@@ -351,14 +360,14 @@ Data validation happens BEFORE transformations, not after:
 
 ### Streamlit Dashboard
 
-| Overview | Revenue Analysis | Customer Segmentation |
-|:--------:|:----------------:|:---------------------:|
+|                       Overview                        |                  Revenue Analysis                  |                 Customer Segmentation                  |
+| :---------------------------------------------------: | :------------------------------------------------: | :----------------------------------------------------: |
 | ![Dashboard](docs/screenshots/dashboard-overview.png) | ![Revenue](docs/screenshots/dashboard-revenue.png) | ![Customers](docs/screenshots/dashboard-customers.png) |
 
 ### Next.js Web App
 
-| Metrics View | Chat Interface | Reports |
-|:------------:|:--------------:|:-------:|
+|                   Metrics View                   |                 Chat Interface                  |                     Reports                      |
+| :----------------------------------------------: | :---------------------------------------------: | :----------------------------------------------: |
 | ![Metrics](docs/screenshots/02-metrics-view.png) | ![Chat](docs/screenshots/03-chat-interface.png) | ![Reports](docs/screenshots/04-reports-page.png) |
 
 ---
@@ -393,16 +402,16 @@ echo-analytics-platform/
 └── tests/                    # Test suite (238 tests)
 ```
 
-| Layer | Technology |
-|-------|------------|
-| API | FastAPI 0.104, Python 3.11 |
-| Database | PostgreSQL 15 (partitioned), Redis 7 |
-| Web App | Next.js 15, TypeScript, Tailwind CSS |
-| Dashboard | Streamlit 1.29, Plotly |
-| ETL | Prefect 2.14 |
-| Transformations | dbt 1.7 |
-| Data Quality | Great Expectations 0.18 |
-| CI/CD | GitHub Actions |
+| Layer           | Technology                           |
+| --------------- | ------------------------------------ |
+| API             | FastAPI 0.104, Python 3.11           |
+| Database        | PostgreSQL 15 (partitioned), Redis 7 |
+| Web App         | Next.js 15, TypeScript, Tailwind CSS |
+| Dashboard       | Streamlit 1.29, Plotly               |
+| ETL             | Prefect 2.14                         |
+| Transformations | dbt 1.7                              |
+| Data Quality    | Great Expectations 0.18              |
+| CI/CD           | GitHub Actions                       |
 
 ---
 
@@ -413,6 +422,7 @@ echo-analytics-platform/
 Live at **[echo-analytics.streamlit.app](https://echo-analytics.streamlit.app)**
 
 Or run locally:
+
 ```bash
 pip install streamlit plotly pandas
 streamlit run dashboard/app.py

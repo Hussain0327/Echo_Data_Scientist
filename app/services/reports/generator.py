@@ -1,14 +1,15 @@
-from typing import Dict, Any, List, Optional
-import pandas as pd
 import uuid
 from datetime import datetime
+from typing import Any, Dict, Optional
+
+import pandas as pd
 from pydantic import BaseModel
 
-from app.services.reports.templates import get_template, ReportTemplate, TemplateSection
+from app.services.llm.context_builder import DataContextBuilder
+from app.services.llm.conversation import ConversationService
 from app.services.metrics.engine import MetricsEngine
 from app.services.metrics.registry import ALL_METRICS
-from app.services.llm.conversation import ConversationService
-from app.services.llm.context_builder import DataContextBuilder
+from app.services.reports.templates import ReportTemplate, TemplateSection, get_template
 
 
 class NarrativeSection(BaseModel):
@@ -32,7 +33,6 @@ class GeneratedReport(BaseModel):
 
 
 class ReportGenerator:
-
     def __init__(self):
         self.conversation_service = ConversationService()
 
@@ -43,11 +43,7 @@ class ReportGenerator:
                 f"Missing required columns for {template.template_type}: {missing_cols}"
             )
 
-    def _calculate_metrics(
-        self,
-        df: pd.DataFrame,
-        template: ReportTemplate
-    ) -> Dict[str, Any]:
+    def _calculate_metrics(self, df: pd.DataFrame, template: ReportTemplate) -> Dict[str, Any]:
         engine = MetricsEngine(df)
 
         for metric_class in ALL_METRICS:
@@ -69,7 +65,7 @@ class ReportGenerator:
                     "value": result.value,
                     "unit": result.unit,
                     "period": result.period,
-                    "metadata": result.metadata
+                    "metadata": result.metadata,
                 }
             except Exception as e:
                 raise ValueError(f"Failed to calculate metric '{metric_name}': {str(e)}")
@@ -82,7 +78,7 @@ class ReportGenerator:
                         "value": result.value,
                         "unit": result.unit,
                         "period": result.period,
-                        "metadata": result.metadata
+                        "metadata": result.metadata,
                     }
                 except Exception:
                     pass
@@ -95,18 +91,18 @@ class ReportGenerator:
         lines.append("")
 
         for metric_name, data in metrics.items():
-            display_name = metric_name.replace('_', ' ').title()
-            value = data['value']
-            unit = data['unit']
-            period = data.get('period', 'all_time')
+            display_name = metric_name.replace("_", " ").title()
+            value = data["value"]
+            unit = data["unit"]
+            period = data.get("period", "all_time")
 
-            if unit == '$':
+            if unit == "$":
                 formatted = f"${value:,.2f}"
-            elif unit == '%':
+            elif unit == "%":
                 formatted = f"{value:.2f}%"
-            elif unit == 'ratio':
+            elif unit == "ratio":
                 formatted = f"{value:.2f}x"
-            elif unit == 'months':
+            elif unit == "months":
                 formatted = f"{value:.1f} months"
             else:
                 formatted = f"{value:,.2f} {unit}".strip()
@@ -116,10 +112,10 @@ class ReportGenerator:
             if period != "all_time":
                 lines.append(f"  Period: {period}")
 
-            metadata = data.get('metadata', {})
+            metadata = data.get("metadata", {})
             if metadata and isinstance(metadata, dict):
                 for key, val in metadata.items():
-                    if key not in ['calculated_at', 'metric_name']:
+                    if key not in ["calculated_at", "metric_name"]:
                         if isinstance(val, (int, float)):
                             lines.append(f"  {key}: {val:,.2f}")
                         elif isinstance(val, str):
@@ -130,11 +126,7 @@ class ReportGenerator:
         return "\n".join(lines)
 
     async def _generate_narrative(
-        self,
-        section_type: TemplateSection,
-        prompt: str,
-        metrics_formatted: str,
-        data_summary: str
+        self, section_type: TemplateSection, prompt: str, metrics_formatted: str, data_summary: str
     ) -> str:
         session_id = f"report_{uuid.uuid4().hex[:8]}"
 
@@ -156,8 +148,7 @@ IMPORTANT:
 """
 
         response = await self.conversation_service.chat(
-            session_id=session_id,
-            user_message=context_prompt
+            session_id=session_id, user_message=context_prompt
         )
 
         self.conversation_service.clear_session(session_id)
@@ -165,10 +156,7 @@ IMPORTANT:
         return response.message
 
     async def generate(
-        self,
-        df: pd.DataFrame,
-        template_type: str,
-        user_id: str = "default"
+        self, df: pd.DataFrame, template_type: str, user_id: str = "default"
     ) -> GeneratedReport:
         template = get_template(template_type)
 
@@ -184,10 +172,7 @@ IMPORTANT:
             prompt = template.narrative_prompts.get(section.value, "")
             if prompt:
                 narrative = await self._generate_narrative(
-                    section,
-                    prompt,
-                    metrics_formatted,
-                    data_summary
+                    section, prompt, metrics_formatted, data_summary
                 )
                 narratives[section.value] = narrative
 
@@ -203,7 +188,7 @@ IMPORTANT:
                 "user_id": user_id,
                 "row_count": len(df),
                 "column_count": len(df.columns),
-            }
+            },
         )
 
 

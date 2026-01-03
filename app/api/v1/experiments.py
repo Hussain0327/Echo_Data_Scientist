@@ -1,29 +1,26 @@
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.services.experiments.service import ExperimentService
 from app.models.schemas import (
     CreateExperimentRequest,
-    UpdateExperimentRequest,
-    SubmitVariantResultsRequest,
-    ExperimentResponse,
-    ExperimentSummary,
-    ExperimentListResponse,
     ExperimentExplanation,
+    ExperimentListResponse,
+    ExperimentResponse,
     ExperimentStatusEnum,
+    ExperimentSummary,
+    SubmitVariantResultsRequest,
+    UpdateExperimentRequest,
 )
-
+from app.services.experiments.service import ExperimentService
 
 router = APIRouter()
 
 
 @router.post("", response_model=ExperimentResponse, status_code=201)
-async def create_experiment(
-    request: CreateExperimentRequest,
-    db: AsyncSession = Depends(get_db)
-):
+async def create_experiment(request: CreateExperimentRequest, db: AsyncSession = Depends(get_db)):
     service = ExperimentService(db)
     experiment = await service.create_experiment(request)
     # variants_loaded=False because newly created experiments have no variants yet
@@ -35,26 +32,18 @@ async def list_experiments(
     status: Optional[ExperimentStatusEnum] = Query(None, description="Filter by status"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     service = ExperimentService(db)
-    experiments = await service.list_experiments(
-        status=status,
-        limit=limit,
-        offset=offset
-    )
+    experiments = await service.list_experiments(status=status, limit=limit, offset=offset)
 
     return ExperimentListResponse(
-        experiments=[service.to_response(e) for e in experiments],
-        total=len(experiments)
+        experiments=[service.to_response(e) for e in experiments], total=len(experiments)
     )
 
 
 @router.get("/{experiment_id}", response_model=ExperimentResponse)
-async def get_experiment(
-    experiment_id: str,
-    db: AsyncSession = Depends(get_db)
-):
+async def get_experiment(experiment_id: str, db: AsyncSession = Depends(get_db)):
     service = ExperimentService(db)
     experiment = await service.get_experiment(experiment_id)
 
@@ -65,10 +54,7 @@ async def get_experiment(
 
 
 @router.get("/{experiment_id}/summary", response_model=ExperimentSummary)
-async def get_experiment_summary(
-    experiment_id: str,
-    db: AsyncSession = Depends(get_db)
-):
+async def get_experiment_summary(experiment_id: str, db: AsyncSession = Depends(get_db)):
     service = ExperimentService(db)
     summary = await service.get_experiment_summary(experiment_id)
 
@@ -80,9 +66,7 @@ async def get_experiment_summary(
 
 @router.patch("/{experiment_id}", response_model=ExperimentResponse)
 async def update_experiment(
-    experiment_id: str,
-    request: UpdateExperimentRequest,
-    db: AsyncSession = Depends(get_db)
+    experiment_id: str, request: UpdateExperimentRequest, db: AsyncSession = Depends(get_db)
 ):
     service = ExperimentService(db)
     experiment = await service.update_experiment(experiment_id, request)
@@ -95,9 +79,7 @@ async def update_experiment(
 
 @router.post("/{experiment_id}/results", response_model=ExperimentSummary)
 async def submit_variant_results(
-    experiment_id: str,
-    request: SubmitVariantResultsRequest,
-    db: AsyncSession = Depends(get_db)
+    experiment_id: str, request: SubmitVariantResultsRequest, db: AsyncSession = Depends(get_db)
 ):
     service = ExperimentService(db)
     experiment = await service.submit_variant_results(experiment_id, request)
@@ -111,10 +93,7 @@ async def submit_variant_results(
 
 
 @router.delete("/{experiment_id}", status_code=204)
-async def delete_experiment(
-    experiment_id: str,
-    db: AsyncSession = Depends(get_db)
-):
+async def delete_experiment(experiment_id: str, db: AsyncSession = Depends(get_db)):
     service = ExperimentService(db)
     deleted = await service.delete_experiment(experiment_id)
 
@@ -125,10 +104,7 @@ async def delete_experiment(
 
 
 @router.post("/{experiment_id}/explain", response_model=ExperimentExplanation)
-async def explain_experiment(
-    experiment_id: str,
-    db: AsyncSession = Depends(get_db)
-):
+async def explain_experiment(experiment_id: str, db: AsyncSession = Depends(get_db)):
     service = ExperimentService(db)
     summary = await service.get_experiment_summary(experiment_id)
 
@@ -138,7 +114,7 @@ async def explain_experiment(
     if not summary.statistics:
         raise HTTPException(
             status_code=400,
-            detail="Experiment has no results to explain. Submit variant results first."
+            detail="Experiment has no results to explain. Submit variant results first.",
         )
 
     # Import LLM service here to avoid circular imports

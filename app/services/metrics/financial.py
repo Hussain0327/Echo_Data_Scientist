@@ -1,10 +1,9 @@
 import pandas as pd
-from typing import Optional
-from app.services.metrics.base import BaseMetric, MetricResult, MetricDefinition
+
+from app.services.metrics.base import BaseMetric, MetricDefinition, MetricResult
 
 
 class CAC(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="cac",
@@ -13,12 +12,12 @@ class CAC(BaseMetric):
             category="financial",
             unit="$",
             formula="Total Marketing Spend / New Customers Acquired",
-            required_columns=["spend", "conversions"]
+            required_columns=["spend", "conversions"],
         )
 
     def calculate(self, **kwargs) -> MetricResult:
-        total_spend = self.df['spend'].sum()
-        total_conversions = self.df['conversions'].sum()
+        total_spend = self.df["spend"].sum()
+        total_conversions = self.df["conversions"].sum()
 
         if total_conversions == 0:
             cac = 0.0
@@ -28,12 +27,11 @@ class CAC(BaseMetric):
         return self._format_result(
             value=float(cac),
             total_spend=round(float(total_spend), 2),
-            total_conversions=int(total_conversions)
+            total_conversions=int(total_conversions),
         )
 
 
 class LTV(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="ltv",
@@ -42,11 +40,11 @@ class LTV(BaseMetric):
             category="financial",
             unit="$",
             formula="Average Revenue Per Customer * Avg Lifespan (months)",
-            required_columns=["amount", "customer_id"]
+            required_columns=["amount", "customer_id"],
         )
 
     def calculate(self, avg_lifespan_months: int = 24, **kwargs) -> MetricResult:
-        revenue_per_customer = self.df.groupby('customer_id')['amount'].sum()
+        revenue_per_customer = self.df.groupby("customer_id")["amount"].sum()
 
         if len(revenue_per_customer) == 0:
             return self._format_result(value=0.0, customer_count=0)
@@ -65,14 +63,14 @@ class LTV(BaseMetric):
             avg_customer_revenue=round(float(avg_revenue), 2),
             customer_count=len(revenue_per_customer),
             assumed_lifespan_months=avg_lifespan_months,
-            data_months=months_in_data
+            data_months=months_in_data,
         )
 
     def _estimate_data_months(self) -> int:
-        if 'date' not in self.df.columns:
+        if "date" not in self.df.columns:
             return 1
 
-        dates = pd.to_datetime(self.df['date'])
+        dates = pd.to_datetime(self.df["date"])
         if len(dates) == 0:
             return 1
 
@@ -82,7 +80,6 @@ class LTV(BaseMetric):
 
 
 class LTVCACRatio(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="ltv_cac_ratio",
@@ -91,7 +88,7 @@ class LTVCACRatio(BaseMetric):
             category="financial",
             unit="ratio",
             formula="LTV / CAC",
-            required_columns=["amount", "customer_id", "spend", "conversions"]
+            required_columns=["amount", "customer_id", "spend", "conversions"],
         )
 
     def calculate(self, **kwargs) -> MetricResult:
@@ -114,15 +111,11 @@ class LTVCACRatio(BaseMetric):
                 status = "concerning"
 
         return self._format_result(
-            value=ratio,
-            ltv=ltv_result.value,
-            cac=cac_result.value,
-            status=status
+            value=ratio, ltv=ltv_result.value, cac=cac_result.value, status=status
         )
 
 
 class GrossMargin(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="gross_margin",
@@ -131,12 +124,12 @@ class GrossMargin(BaseMetric):
             category="financial",
             unit="%",
             formula="((Revenue - COGS) / Revenue) * 100",
-            required_columns=["amount", "cost"]
+            required_columns=["amount", "cost"],
         )
 
     def calculate(self, **kwargs) -> MetricResult:
-        revenue = self.df['amount'].sum()
-        cost = self.df['cost'].sum()
+        revenue = self.df["amount"].sum()
+        cost = self.df["cost"].sum()
 
         if revenue == 0:
             return self._format_result(value=0.0, revenue=0, cost=0)
@@ -148,12 +141,11 @@ class GrossMargin(BaseMetric):
             value=float(margin),
             revenue=round(float(revenue), 2),
             cost=round(float(cost), 2),
-            gross_profit=round(float(gross_profit), 2)
+            gross_profit=round(float(gross_profit), 2),
         )
 
 
 class BurnRate(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="burn_rate",
@@ -162,15 +154,15 @@ class BurnRate(BaseMetric):
             category="financial",
             unit="$/month",
             formula="Total Expenses / Number of Months",
-            required_columns=["expense", "date"]
+            required_columns=["expense", "date"],
         )
 
     def calculate(self, **kwargs) -> MetricResult:
         df = self.df.copy()
-        df['date'] = pd.to_datetime(df['date'])
+        df["date"] = pd.to_datetime(df["date"])
 
-        df['month'] = df['date'].dt.to_period('M')
-        monthly_expenses = df.groupby('month')['expense'].sum()
+        df["month"] = df["date"].dt.to_period("M")
+        monthly_expenses = df.groupby("month")["expense"].sum()
 
         if len(monthly_expenses) == 0:
             return self._format_result(value=0.0, months=0)
@@ -182,12 +174,11 @@ class BurnRate(BaseMetric):
             value=float(avg_burn),
             total_expenses=round(float(total_burn), 2),
             months=len(monthly_expenses),
-            monthly_breakdown={str(k): round(float(v), 2) for k, v in monthly_expenses.items()}
+            monthly_breakdown={str(k): round(float(v), 2) for k, v in monthly_expenses.items()},
         )
 
 
 class Runway(BaseMetric):
-
     def get_definition(self) -> MetricDefinition:
         return MetricDefinition(
             name="runway",
@@ -196,7 +187,7 @@ class Runway(BaseMetric):
             category="financial",
             unit="months",
             formula="Cash Balance / Monthly Burn Rate",
-            required_columns=["expense", "date"]
+            required_columns=["expense", "date"],
         )
 
     def calculate(self, cash_balance: float = 0, **kwargs) -> MetricResult:
@@ -208,7 +199,7 @@ class Runway(BaseMetric):
                 value=0.0,
                 cash_balance=cash_balance,
                 burn_rate=burn_result.value,
-                message="Need cash_balance parameter and expense data"
+                message="Need cash_balance parameter and expense data",
             )
 
         runway = cash_balance / burn_result.value
@@ -221,8 +212,5 @@ class Runway(BaseMetric):
             status = "critical"
 
         return self._format_result(
-            value=runway,
-            cash_balance=cash_balance,
-            burn_rate=burn_result.value,
-            status=status
+            value=runway, cash_balance=cash_balance, burn_rate=burn_result.value, status=status
         )

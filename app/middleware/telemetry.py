@@ -1,6 +1,7 @@
 import time
-import structlog
 from typing import Callable
+
+import structlog
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -8,10 +9,7 @@ logger = structlog.get_logger()
 
 
 class TelemetryMiddleware(BaseHTTPMiddleware):
-
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         start_time = time.time()
 
         method = request.method
@@ -26,7 +24,7 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
                 method=method,
                 path=path,
                 status_code=response.status_code,
-                duration_ms=round(duration * 1000, 2)
+                duration_ms=round(duration * 1000, 2),
             )
 
             response.headers["X-Process-Time"] = str(duration)
@@ -40,6 +38,6 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
                 method=method,
                 path=path,
                 error=str(e),
-                duration_ms=round(duration * 1000, 2)
+                duration_ms=round(duration * 1000, 2),
             )
             raise

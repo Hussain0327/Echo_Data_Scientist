@@ -19,7 +19,6 @@ import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional
 
 import psycopg2
 from psycopg2 import sql

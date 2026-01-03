@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional
-import pandas as pd
-import numpy as np
 from datetime import datetime
+from typing import Optional
+
+import numpy as np
+import pandas as pd
 
 
 @dataclass
@@ -125,10 +126,25 @@ class DataProfile:
 
         # Add optional fields if present
         optional_fields = [
-            "min_value", "max_value", "mean", "median", "std", "variance",
-            "skewness", "kurtosis", "percentiles", "histogram", "top_values",
-            "min_length", "max_length", "avg_length", "min_date", "max_date",
-            "date_range_days", "sample_values", "outlier_count"
+            "min_value",
+            "max_value",
+            "mean",
+            "median",
+            "std",
+            "variance",
+            "skewness",
+            "kurtosis",
+            "percentiles",
+            "histogram",
+            "top_values",
+            "min_length",
+            "max_length",
+            "avg_length",
+            "min_date",
+            "max_date",
+            "date_range_days",
+            "sample_values",
+            "outlier_count",
         ]
 
         for field_name in optional_fields:
@@ -143,7 +159,6 @@ class DataProfile:
 
 
 class DataProfiler:
-
     def __init__(
         self,
         max_categories: int = 20,
@@ -165,10 +180,7 @@ class DataProfiler:
         column_count = len(df.columns)
         memory_usage_mb = df.memory_usage(deep=True).sum() / (1024 * 1024)
 
-        column_profiles = [
-            self._profile_column(df[col], col)
-            for col in df.columns
-        ]
+        column_profiles = [self._profile_column(df[col], col) for col in df.columns]
         correlations, corr_matrix = self._calculate_correlations(df)
         duplicate_rows = df.duplicated().sum()
         duplicate_pct = (duplicate_rows / row_count * 100) if row_count > 0 else 0
@@ -279,7 +291,7 @@ class DataProfiler:
         profile.max_date = str(clean.max())
 
         date_range = clean.max() - clean.min()
-        profile.date_range_days = date_range.days if hasattr(date_range, 'days') else 0
+        profile.date_range_days = date_range.days if hasattr(date_range, "days") else 0
 
     def _profile_categorical(self, series: pd.Series, profile: ColumnProfile) -> None:
         clean = series.dropna()
@@ -322,17 +334,19 @@ class DataProfiler:
         cols = corr_matrix.columns.tolist()
 
         for i, col1 in enumerate(cols):
-            for col2 in cols[i + 1:]:
+            for col2 in cols[i + 1 :]:
                 corr = corr_matrix.loc[col1, col2]
 
                 if pd.notna(corr) and abs(corr) >= self.correlation_threshold:
                     strength = self._correlation_strength(corr)
-                    correlations.append(CorrelationInfo(
-                        column1=col1,
-                        column2=col2,
-                        correlation=float(corr),
-                        strength=strength,
-                    ))
+                    correlations.append(
+                        CorrelationInfo(
+                            column1=col1,
+                            column2=col2,
+                            correlation=float(corr),
+                            strength=strength,
+                        )
+                    )
 
         correlations.sort(key=lambda x: abs(x.correlation), reverse=True)
 
@@ -361,71 +375,87 @@ class DataProfiler:
 
         if duplicate_pct > 0:
             severity = "High" if duplicate_pct > 10 else "Medium" if duplicate_pct > 1 else "Low"
-            warnings.append(DataQualityWarning(
-                severity=severity,
-                column=None,
-                issue="Duplicate Rows",
-                details=f"{duplicate_pct:.1f}% of rows are duplicates",
-                recommendation="Review and deduplicate if these are unintended",
-            ))
+            warnings.append(
+                DataQualityWarning(
+                    severity=severity,
+                    column=None,
+                    issue="Duplicate Rows",
+                    details=f"{duplicate_pct:.1f}% of rows are duplicates",
+                    recommendation="Review and deduplicate if these are unintended",
+                )
+            )
 
         for profile in profiles:
             if profile.null_percentage > 50:
-                warnings.append(DataQualityWarning(
-                    severity="High",
-                    column=profile.name,
-                    issue="High Null Percentage",
-                    details=f"{profile.null_percentage:.1f}% null values",
-                    recommendation="Consider imputation or investigate data source",
-                ))
+                warnings.append(
+                    DataQualityWarning(
+                        severity="High",
+                        column=profile.name,
+                        issue="High Null Percentage",
+                        details=f"{profile.null_percentage:.1f}% null values",
+                        recommendation="Consider imputation or investigate data source",
+                    )
+                )
             elif profile.null_percentage > 20:
-                warnings.append(DataQualityWarning(
-                    severity="Medium",
-                    column=profile.name,
-                    issue="Moderate Null Percentage",
-                    details=f"{profile.null_percentage:.1f}% null values",
-                    recommendation="Assess impact on analysis",
-                ))
+                warnings.append(
+                    DataQualityWarning(
+                        severity="Medium",
+                        column=profile.name,
+                        issue="Moderate Null Percentage",
+                        details=f"{profile.null_percentage:.1f}% null values",
+                        recommendation="Assess impact on analysis",
+                    )
+                )
 
             if profile.is_constant and profile.non_null_count > 0:
-                warnings.append(DataQualityWarning(
-                    severity="Low",
-                    column=profile.name,
-                    issue="Constant Column",
-                    details="Column has only one unique value",
-                    recommendation="Consider removing if not needed for analysis",
-                ))
+                warnings.append(
+                    DataQualityWarning(
+                        severity="Low",
+                        column=profile.name,
+                        issue="Constant Column",
+                        details="Column has only one unique value",
+                        recommendation="Consider removing if not needed for analysis",
+                    )
+                )
 
-            if (profile.cardinality > 0.9 and
-                not pd.api.types.is_numeric_dtype(df[profile.name]) and
-                profile.unique_count > 100):
-                warnings.append(DataQualityWarning(
-                    severity="Low",
-                    column=profile.name,
-                    issue="High Cardinality",
-                    details=f"{profile.unique_count} unique values ({profile.cardinality:.1%} cardinality)",
-                    recommendation="May need grouping or encoding for modeling",
-                ))
+            if (
+                profile.cardinality > 0.9
+                and not pd.api.types.is_numeric_dtype(df[profile.name])
+                and profile.unique_count > 100
+            ):
+                warnings.append(
+                    DataQualityWarning(
+                        severity="Low",
+                        column=profile.name,
+                        issue="High Cardinality",
+                        details=f"{profile.unique_count} unique values ({profile.cardinality:.1%} cardinality)",
+                        recommendation="May need grouping or encoding for modeling",
+                    )
+                )
 
             if profile.has_outliers and profile.outlier_count:
                 pct = profile.outlier_count / profile.total_count * 100
                 severity = "High" if pct > 10 else "Medium" if pct > 5 else "Low"
-                warnings.append(DataQualityWarning(
-                    severity=severity,
-                    column=profile.name,
-                    issue="Outliers Detected",
-                    details=f"{profile.outlier_count} outliers ({pct:.1f}% of values)",
-                    recommendation="Review outliers - may need capping or removal",
-                ))
+                warnings.append(
+                    DataQualityWarning(
+                        severity=severity,
+                        column=profile.name,
+                        issue="Outliers Detected",
+                        details=f"{profile.outlier_count} outliers ({pct:.1f}% of values)",
+                        recommendation="Review outliers - may need capping or removal",
+                    )
+                )
 
             if profile.is_unique and profile.non_null_count > 100:
-                warnings.append(DataQualityWarning(
-                    severity="Low",
-                    column=profile.name,
-                    issue="Potential ID Column",
-                    details="All values are unique - may be an identifier",
-                    recommendation="Exclude from statistical analysis if it's an ID",
-                ))
+                warnings.append(
+                    DataQualityWarning(
+                        severity="Low",
+                        column=profile.name,
+                        issue="Potential ID Column",
+                        details="All values are unique - may be an identifier",
+                        recommendation="Exclude from statistical analysis if it's an ID",
+                    )
+                )
 
         return warnings
 
@@ -491,7 +521,9 @@ class DataProfiler:
             print("NOTABLE CORRELATIONS")
             print("-" * 60)
             for corr in profile.correlations[:10]:
-                print(f"  {corr.column1} <-> {corr.column2}: {corr.correlation:.3f} ({corr.strength})")
+                print(
+                    f"  {corr.column1} <-> {corr.column2}: {corr.correlation:.3f} ({corr.strength})"
+                )
 
         if profile.warnings:
             print("\n" + "-" * 60)

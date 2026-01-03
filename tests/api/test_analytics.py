@@ -1,12 +1,8 @@
-import pytest
-from datetime import datetime
-
-
 def test_start_session(client):
-    response = client.post("/api/v1/analytics/session/start", json={
-        "task_type": "report_generation",
-        "baseline_time_seconds": 7200.0
-    })
+    response = client.post(
+        "/api/v1/analytics/session/start",
+        json={"task_type": "report_generation", "baseline_time_seconds": 7200.0},
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -16,14 +12,12 @@ def test_start_session(client):
 
 
 def test_end_session(client):
-    start_response = client.post("/api/v1/analytics/session/start", json={
-        "task_type": "chat_interaction"
-    })
+    start_response = client.post(
+        "/api/v1/analytics/session/start", json={"task_type": "chat_interaction"}
+    )
     session_id = start_response.json()["id"]
 
-    end_response = client.post("/api/v1/analytics/session/end", json={
-        "session_id": session_id
-    })
+    end_response = client.post("/api/v1/analytics/session/end", json={"session_id": session_id})
 
     assert end_response.status_code == 200
     data = end_response.json()
@@ -32,9 +26,9 @@ def test_end_session(client):
 
 
 def test_get_session(client):
-    start_response = client.post("/api/v1/analytics/session/start", json={
-        "task_type": "metric_calculation"
-    })
+    start_response = client.post(
+        "/api/v1/analytics/session/start", json={"task_type": "metric_calculation"}
+    )
     session_id = start_response.json()["id"]
 
     get_response = client.get(f"/api/v1/analytics/session/{session_id}")
@@ -51,12 +45,8 @@ def test_get_session_not_found(client):
 
 
 def test_get_sessions(client):
-    client.post("/api/v1/analytics/session/start", json={
-        "task_type": "report_generation"
-    })
-    client.post("/api/v1/analytics/session/start", json={
-        "task_type": "chat_interaction"
-    })
+    client.post("/api/v1/analytics/session/start", json={"task_type": "report_generation"})
+    client.post("/api/v1/analytics/session/start", json={"task_type": "chat_interaction"})
 
     response = client.get("/api/v1/analytics/sessions")
 

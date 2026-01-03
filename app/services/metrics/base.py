@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List
+
 import pandas as pd
 from pydantic import BaseModel, Field
 
@@ -28,7 +29,6 @@ class MetricDefinition(BaseModel):
 
 
 class BaseMetric(ABC):
-
     def __init__(self, df: pd.DataFrame):
         self.df = df
         self._validate_columns()
@@ -45,26 +45,16 @@ class BaseMetric(ABC):
         if self.df.empty:
             return
         definition = self.get_definition()
-        missing = [
-            col for col in definition.required_columns
-            if col not in self.df.columns
-        ]
+        missing = [col for col in definition.required_columns if col not in self.df.columns]
         if missing:
-            raise ValueError(
-                f"Missing columns for {definition.name}: {missing}"
-            )
+            raise ValueError(f"Missing columns for {definition.name}: {missing}")
 
-    def _format_result(
-        self,
-        value: float,
-        period: str = None,
-        **metadata
-    ) -> MetricResult:
+    def _format_result(self, value: float, period: str = None, **metadata) -> MetricResult:
         definition = self.get_definition()
         return MetricResult(
             metric_name=definition.name,
             value=round(value, 2),
             unit=definition.unit,
             period=period or "all_time",
-            metadata=metadata
+            metadata=metadata,
         )

@@ -1,5 +1,6 @@
-import pandas as pd
 from typing import Optional
+
+import pandas as pd
 from prefect import task
 from prefect.logging import get_run_logger
 
@@ -11,11 +12,7 @@ class DataValidationError(Exception):
 
 
 @task
-def validate_data(
-    df: pd.DataFrame,
-    expectation_suite: str,
-    raise_on_failure: bool = True
-) -> dict:
+def validate_data(df: pd.DataFrame, expectation_suite: str, raise_on_failure: bool = True) -> dict:
     logger = get_run_logger()
 
     try:
@@ -37,10 +34,12 @@ def validate_data(
 
     checkpoint_result = context.run_checkpoint(
         checkpoint_name=f"{expectation_suite}_checkpoint",
-        validations=[{
-            "batch_request": batch_request,
-            "expectation_suite_name": expectation_suite,
-        }],
+        validations=[
+            {
+                "batch_request": batch_request,
+                "expectation_suite_name": expectation_suite,
+            }
+        ],
     )
 
     success = checkpoint_result.success
@@ -48,10 +47,7 @@ def validate_data(
 
     if not success and raise_on_failure:
         failures = _extract_failures(checkpoint_result)
-        raise DataValidationError(
-            f"Data validation failed for {expectation_suite}",
-            failures
-        )
+        raise DataValidationError(f"Data validation failed for {expectation_suite}", failures)
 
     return {
         "success": success,
@@ -62,10 +58,7 @@ def validate_data(
 
 
 @task
-def run_expectations(
-    df: pd.DataFrame,
-    expectations: list[dict]
-) -> dict:
+def run_expectations(df: pd.DataFrame, expectations: list[dict]) -> dict:
     logger = get_run_logger()
 
     results = []
@@ -77,12 +70,14 @@ def run_expectations(
         kwargs = {k: v for k, v in exp.items() if k not in ["expectation_type", "column"]}
 
         passed, details = _run_single_expectation(df, exp_type, column, kwargs)
-        results.append({
-            "expectation": exp_type,
-            "column": column,
-            "passed": passed,
-            "details": details,
-        })
+        results.append(
+            {
+                "expectation": exp_type,
+                "column": column,
+                "passed": passed,
+                "details": details,
+            }
+        )
 
         if not passed:
             all_passed = False
@@ -99,10 +94,7 @@ def run_expectations(
 
 
 def _run_single_expectation(
-    df: pd.DataFrame,
-    exp_type: str,
-    column: Optional[str],
-    kwargs: dict
+    df: pd.DataFrame, exp_type: str, column: Optional[str], kwargs: dict
 ) -> tuple[bool, dict]:
     try:
         if exp_type == "expect_column_to_exist":
@@ -141,7 +133,6 @@ def _run_single_expectation(
             return passed, {"invalid_count": int(invalid_count)}
 
         if exp_type == "expect_column_values_to_match_regex":
-            import re
             pattern = kwargs.get("regex", ".*")
             matches = df[column].astype(str).str.match(pattern)
             non_matches = (~matches).sum()
@@ -162,11 +153,17 @@ def _extract_failures(checkpoint_result) -> list:
             validation = run_result.get("validation_result", {})
             for result in validation.get("results", []):
                 if not result.get("success", True):
-                    failures.append({
-                        "expectation": result.get("expectation_config", {}).get("expectation_type"),
-                        "column": result.get("expectation_config", {}).get("kwargs", {}).get("column"),
-                        "observed": result.get("result", {}),
-                    })
+                    failures.append(
+                        {
+                            "expectation": result.get("expectation_config", {}).get(
+                                "expectation_type"
+                            ),
+                            "column": result.get("expectation_config", {})
+                            .get("kwargs", {})
+                            .get("column"),
+                            "observed": result.get("result", {}),
+                        }
+                    )
     except Exception:
         pass
     return failures

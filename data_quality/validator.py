@@ -1,7 +1,8 @@
-import pandas as pd
-from pathlib import Path
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
+
+import pandas as pd
 
 
 @dataclass
@@ -33,16 +34,14 @@ class DataValidator:
         if self._context is None:
             try:
                 import great_expectations as gx
+
                 self._context = gx.get_context(context_root_dir=self.context_root)
             except Exception:
                 self._context = None
         return self._context
 
     def validate(
-        self,
-        df: pd.DataFrame,
-        suite_name: str,
-        raise_on_failure: bool = False
+        self, df: pd.DataFrame, suite_name: str, raise_on_failure: bool = False
     ) -> ValidationResult:
         if self.context is None:
             return self._validate_without_gx(df, suite_name)
@@ -50,10 +49,7 @@ class DataValidator:
         return self._validate_with_gx(df, suite_name, raise_on_failure)
 
     def _validate_with_gx(
-        self,
-        df: pd.DataFrame,
-        suite_name: str,
-        raise_on_failure: bool
+        self, df: pd.DataFrame, suite_name: str, raise_on_failure: bool
     ) -> ValidationResult:
         from great_expectations.core.batch import RuntimeBatchRequest
 
@@ -70,10 +66,12 @@ class DataValidator:
         try:
             checkpoint_result = self.context.run_checkpoint(
                 checkpoint_name=checkpoint_name,
-                validations=[{
-                    "batch_request": batch_request,
-                    "expectation_suite_name": suite_name,
-                }],
+                validations=[
+                    {
+                        "batch_request": batch_request,
+                        "expectation_suite_name": suite_name,
+                    }
+                ],
             )
         except Exception as e:
             return ValidationResult(
@@ -92,11 +90,17 @@ class DataValidator:
             validation = run_result.get("validation_result", {})
             for result in validation.get("results", []):
                 if not result.get("success", True):
-                    failures.append({
-                        "expectation": result.get("expectation_config", {}).get("expectation_type"),
-                        "column": result.get("expectation_config", {}).get("kwargs", {}).get("column"),
-                        "result": result.get("result", {}),
-                    })
+                    failures.append(
+                        {
+                            "expectation": result.get("expectation_config", {}).get(
+                                "expectation_type"
+                            ),
+                            "column": result.get("expectation_config", {})
+                            .get("kwargs", {})
+                            .get("column"),
+                            "result": result.get("result", {}),
+                        }
+                    )
 
         result = ValidationResult(
             success=checkpoint_result.success,
@@ -139,11 +143,13 @@ class DataValidator:
             if success:
                 passed += 1
             else:
-                failures.append({
-                    "expectation": exp_type,
-                    "column": kwargs.get("column"),
-                    "kwargs": kwargs,
-                })
+                failures.append(
+                    {
+                        "expectation": exp_type,
+                        "column": kwargs.get("column"),
+                        "kwargs": kwargs,
+                    }
+                )
 
         return ValidationResult(
             success=len(failures) == 0,
@@ -201,6 +207,7 @@ class DataValidator:
 
     def list_available_suites(self) -> list[str]:
         from data_quality.expectations import list_suites
+
         return list_suites()
 
 

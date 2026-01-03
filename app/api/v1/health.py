@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 from redis import asyncio as aioredis
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.core.cache import get_redis
+from app.core.database import get_db
 
 router = APIRouter()
 
@@ -12,10 +12,7 @@ router = APIRouter()
 @router.get("/health")
 async def health_check():
     """Basic health check"""
-    return {
-        "status": "healthy",
-        "service": "echo-api"
-    }
+    return {"status": "healthy", "service": "echo-api"}
 
 
 @router.get("/health/db")

@@ -1,23 +1,21 @@
 import pytest
-import math
+
 from app.services.experiments.stats import (
+    ExperimentAnalysis,
     VariantData,
+    analyze_experiment,
+    calculate_confidence_interval,
     calculate_conversion_rate,
     calculate_lift,
     calculate_pooled_proportion,
-    calculate_standard_error,
-    run_proportion_z_test,
-    calculate_confidence_interval,
     calculate_sample_size_requirement,
     calculate_statistical_power,
-    analyze_experiment,
     make_decision,
-    ExperimentAnalysis,
+    run_proportion_z_test,
 )
 
 
 class TestConversionRate:
-
     def test_basic_conversion_rate(self):
         rate = calculate_conversion_rate(25, 100)
         assert rate == 25.0
@@ -58,7 +56,7 @@ class TestLiftCalculations:
         """Test lift when control rate is zero."""
         absolute, relative = calculate_lift(0.0, 0.10)
         assert absolute == pytest.approx(10.0, rel=0.01)
-        assert relative == float('inf')
+        assert relative == float("inf")
 
     def test_no_difference(self):
         """Test lift when rates are equal."""
@@ -180,7 +178,7 @@ class TestSampleSizeRequirement:
             baseline_rate=0.20,
             minimum_detectable_effect=5.0,  # 5 percentage points
             alpha=0.05,
-            power=0.80
+            power=0.80,
         )
 
         assert n > 0
@@ -189,7 +187,7 @@ class TestSampleSizeRequirement:
     def test_smaller_effect_needs_more_samples(self):
         """Test that smaller effects require larger samples."""
         n_large_effect = calculate_sample_size_requirement(0.20, 10.0)  # 10pp
-        n_small_effect = calculate_sample_size_requirement(0.20, 2.0)   # 2pp
+        n_small_effect = calculate_sample_size_requirement(0.20, 2.0)  # 2pp
 
         assert n_small_effect > n_large_effect
 
@@ -299,7 +297,7 @@ class TestMakeDecision:
             p_value=0.003,
             is_significant=True,
             sample_size_adequate=True,
-            power=0.85
+            power=0.85,
         )
 
         decision, rationale = make_decision(analysis, alpha=0.05)
@@ -320,7 +318,7 @@ class TestMakeDecision:
             p_value=0.003,
             is_significant=True,
             sample_size_adequate=True,
-            power=0.85
+            power=0.85,
         )
 
         decision, rationale = make_decision(analysis, alpha=0.05)
@@ -341,7 +339,7 @@ class TestMakeDecision:
             p_value=0.23,
             is_significant=False,
             sample_size_adequate=True,
-            power=0.30
+            power=0.30,
         )
 
         decision, rationale = make_decision(analysis, alpha=0.05)
@@ -362,7 +360,7 @@ class TestMakeDecision:
             p_value=0.13,
             is_significant=False,
             sample_size_adequate=False,  # Key difference
-            power=0.40
+            power=0.40,
         )
 
         decision, rationale = make_decision(analysis, alpha=0.05)

@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.api.v1 import health, ingestion, metrics, chat, reports, analytics, feedback, experiments
+
+from app.api.v1 import analytics, chat, experiments, feedback, health, ingestion, metrics, reports
 
 api_router = APIRouter()
 

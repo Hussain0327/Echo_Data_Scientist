@@ -1,7 +1,7 @@
 """Tests for the DataContextBuilder."""
 
-import pytest
 import pandas as pd
+
 from app.services.llm.context_builder import DataContextBuilder
 
 
@@ -10,11 +10,13 @@ class TestDataContextBuilder:
 
     def test_build_data_summary_basic(self):
         """Test basic data summary generation."""
-        df = pd.DataFrame({
-            'date': ['2024-01-01', '2024-01-02', '2024-01-03'],
-            'amount': [100.0, 200.0, 150.0],
-            'customer_id': ['C001', 'C002', 'C001']
-        })
+        df = pd.DataFrame(
+            {
+                "date": ["2024-01-01", "2024-01-02", "2024-01-03"],
+                "amount": [100.0, 200.0, 150.0],
+                "customer_id": ["C001", "C002", "C001"],
+            }
+        )
 
         summary = DataContextBuilder.build_data_summary(df, "test_data.csv")
 
@@ -37,10 +39,9 @@ class TestDataContextBuilder:
 
     def test_build_data_summary_with_date_range(self):
         """Test that date range is detected."""
-        df = pd.DataFrame({
-            'date': pd.to_datetime(['2024-01-01', '2024-03-15', '2024-06-30']),
-            'value': [1, 2, 3]
-        })
+        df = pd.DataFrame(
+            {"date": pd.to_datetime(["2024-01-01", "2024-03-15", "2024-06-30"]), "value": [1, 2, 3]}
+        )
 
         summary = DataContextBuilder.build_data_summary(df)
         assert "Date Range" in summary
@@ -49,10 +50,7 @@ class TestDataContextBuilder:
 
     def test_build_data_summary_with_numeric_ranges(self):
         """Test that numeric ranges are included."""
-        df = pd.DataFrame({
-            'revenue': [100.0, 500.0, 1000.0],
-            'quantity': [1, 5, 10]
-        })
+        df = pd.DataFrame({"revenue": [100.0, 500.0, 1000.0], "quantity": [1, 5, 10]})
 
         summary = DataContextBuilder.build_data_summary(df)
         assert "Numeric Column Ranges" in summary
@@ -63,18 +61,18 @@ class TestDataContextBuilder:
     def test_build_metrics_summary_basic(self):
         """Test basic metrics summary."""
         metrics = {
-            'total_revenue': {
-                'value': 50000.0,
-                'unit': '$',
-                'category': 'revenue',
-                'metadata': {'transaction_count': 100}
+            "total_revenue": {
+                "value": 50000.0,
+                "unit": "$",
+                "category": "revenue",
+                "metadata": {"transaction_count": 100},
             },
-            'conversion_rate': {
-                'value': 12.5,
-                'unit': '%',
-                'category': 'marketing',
-                'metadata': {}
-            }
+            "conversion_rate": {
+                "value": 12.5,
+                "unit": "%",
+                "category": "marketing",
+                "metadata": {},
+            },
         }
 
         summary = DataContextBuilder.build_metrics_summary(metrics)
@@ -98,16 +96,8 @@ class TestDataContextBuilder:
     def test_build_metrics_summary_various_units(self):
         """Test various unit formatting."""
         metrics = {
-            'runway': {
-                'value': 18.5,
-                'unit': 'months',
-                'category': 'financial'
-            },
-            'ltv_cac_ratio': {
-                'value': 3.2,
-                'unit': 'ratio',
-                'category': 'financial'
-            }
+            "runway": {"value": 18.5, "unit": "months", "category": "financial"},
+            "ltv_cac_ratio": {"value": 3.2, "unit": "ratio", "category": "financial"},
         }
 
         summary = DataContextBuilder.build_metrics_summary(metrics)
@@ -116,11 +106,13 @@ class TestDataContextBuilder:
 
     def test_build_quick_stats(self):
         """Test quick stats generation."""
-        df = pd.DataFrame({
-            'amount': [100.0, 200.0, 300.0],
-            'customer_id': ['C1', 'C2', 'C1'],
-            'product': ['A', 'B', 'A']
-        })
+        df = pd.DataFrame(
+            {
+                "amount": [100.0, 200.0, 300.0],
+                "customer_id": ["C1", "C2", "C1"],
+                "product": ["A", "B", "A"],
+            }
+        )
 
         stats = DataContextBuilder.build_quick_stats(df)
 
@@ -137,18 +129,11 @@ class TestDataContextBuilder:
 
     def test_build_full_context(self):
         """Test building full context."""
-        df = pd.DataFrame({
-            'date': ['2024-01-01', '2024-01-02'],
-            'amount': [100.0, 200.0]
-        })
-        metrics = {
-            'total_revenue': {'value': 300.0, 'unit': '$', 'category': 'revenue'}
-        }
+        df = pd.DataFrame({"date": ["2024-01-01", "2024-01-02"], "amount": [100.0, 200.0]})
+        metrics = {"total_revenue": {"value": 300.0, "unit": "$", "category": "revenue"}}
 
         data_summary, metrics_summary = DataContextBuilder.build_full_context(
-            df=df,
-            metrics=metrics,
-            source_name="sales.csv"
+            df=df, metrics=metrics, source_name="sales.csv"
         )
 
         assert "sales.csv" in data_summary
